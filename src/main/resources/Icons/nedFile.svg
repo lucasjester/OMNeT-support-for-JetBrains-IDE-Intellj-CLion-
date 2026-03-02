@@ -1,0 +1,21 @@
+<!-- ned.svg — Network Definition icon (16x16) -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">
+
+    <!-- File background -->
+    <rect x="1" y="1" width="14" height="14" rx="3" fill="#1E2329"/>
+
+    <!-- Connection lines -->
+    <path d="M5 6 L8 4 L11 6" stroke="#7A86A1" stroke-width="1" fill="none"/>
+    <path d="M5 10 L8 12 L11 10" stroke="#7A86A1" stroke-width="1" fill="none"/>
+    <path d="M5 6 L5 10" stroke="#7A86A1" stroke-width="1"/>
+    <path d="M11 6 L11 10" stroke="#7A86A1" stroke-width="1"/>
+
+    <!-- Nodes -->
+    <circle cx="5" cy="6" r="1.2" fill="#A0A8B4"/>
+    <circle cx="11" cy="6" r="1.2" fill="#A0A8B4"/>
+    <circle cx="5" cy="10" r="1.2" fill="#A0A8B4"/>
+
+    <!-- Highlighted definition node -->
+    <circle cx="11" cy="10" r="1.6" fill="#6B57FF"/>
+
+</svg>

@@ -1,0 +1,23 @@
+{
+  parserClass="com.omnetpp.omnetpp_plugin.ini.parser.IniParser"
+
+  psiClassPrefix="Ini"
+  psiImplClassSuffix="Impl"
+
+  psiPackage="com.omnetpp.omnetpp_plugin.ini.psi"
+  psiImplPackage="com.omnetpp.omnetpp_plugin.ini.psi.impl"
+
+  elementTypeHolderClass="com.omnetpp.omnetpp_plugin.ini.psi.IniTypes"
+  elementTypeClass="com.omnetpp.omnetpp_plugin.ini.psi.IniElementType"
+  tokenTypeClass="com.omnetpp.omnetpp_plugin.ini.psi.IniTokenType"
+}
+
+iniFile ::= item*
+
+private item ::= section | keyValue | COMMENT | WHITE_SPACE
+
+section ::= SECTION_HEADER
+
+keyValue ::= KEY EQ value?
+
+private value ::= NUMBER | STRING | BOOLEAN | VALUE

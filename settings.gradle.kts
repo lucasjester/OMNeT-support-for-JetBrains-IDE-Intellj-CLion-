@@ -1,0 +1,1 @@
+rootProject.name = "omnetpp_plugin"
