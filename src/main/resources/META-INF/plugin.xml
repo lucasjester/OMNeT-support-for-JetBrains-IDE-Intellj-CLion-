@@ -38,16 +38,16 @@
 
         <codeInsight.lineMarkerProvider
                 language="OMNET_INI"
-                implementationClass="com.omnetpp.omnetpp_plugin.ini.run.IniConfigLineMarkerProvider"/>
+                implementationClass="com.omnetpp.omnetpp_plugin.ini.runner.IniConfigLineMarkerProvider"/>
 
         <applicationConfigurable
                 id="omnetpp.run.settings"
                 displayName="OMNeT++ Run"
-                instance="com.omnetpp.omnetpp_plugin.ini.run.config.OmnetRunSettingsConfigurable"/>
+                instance="com.omnetpp.omnetpp_plugin.ini.runner.config.OmnetRunSettingsConfigurable"/>
 
-        <configurationType implementation="com.omnetpp.omnetpp_plugin.ini.run.rc.OmnetIniRunConfigurationType"/>
+        <configurationType implementation="com.omnetpp.omnetpp_plugin.ini.runner.rc.OmnetIniRunConfigurationType"/>
 
-        <runConfigurationProducer implementation="com.omnetpp.omnetpp_plugin.ini.run.rc.OmnetIniRunConfigurationProducer"/>
+        <runConfigurationProducer implementation="com.omnetpp.omnetpp_plugin.ini.runner.rc.OmnetIniRunConfigurationProducer"/>
 
 
         <lang.parserDefinition language="OMNET_INI"
