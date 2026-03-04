@@ -15,65 +15,80 @@ import static com.intellij.openapi.editor.colors.TextAttributesKey.createTextAtt
 
 public class IniSyntaxHighlighter extends SyntaxHighlighterBase {
 
+    // ── Token colour keys ────────────────────────────────────────────────
     public static final TextAttributesKey SECTION =
-            createTextAttributesKey("OMNET_INI_SECTION", DefaultLanguageHighlighterColors.METADATA);
-
+            createTextAttributesKey("OMNET_INI_SECTION",  DefaultLanguageHighlighterColors.METADATA);
     public static final TextAttributesKey KEY =
-            createTextAttributesKey("OMNET_INI_KEY", DefaultLanguageHighlighterColors.KEYWORD);
-
+            createTextAttributesKey("OMNET_INI_KEY",      DefaultLanguageHighlighterColors.INSTANCE_FIELD);
     public static final TextAttributesKey EQ =
-            createTextAttributesKey("OMNET_INI_EQ", DefaultLanguageHighlighterColors.OPERATION_SIGN);
-
-    public static final TextAttributesKey VALUE =
-            createTextAttributesKey("OMNET_INI_VALUE", DefaultLanguageHighlighterColors.STRING);
-
+            createTextAttributesKey("OMNET_INI_EQ",       DefaultLanguageHighlighterColors.OPERATION_SIGN);
     public static final TextAttributesKey STRING =
-            createTextAttributesKey("OMNET_INI_STRING", DefaultLanguageHighlighterColors.STRING);
-
+            createTextAttributesKey("OMNET_INI_STRING",   DefaultLanguageHighlighterColors.STRING);
     public static final TextAttributesKey NUMBER =
-            createTextAttributesKey("OMNET_INI_NUMBER", DefaultLanguageHighlighterColors.NUMBER);
-
+            createTextAttributesKey("OMNET_INI_NUMBER",   DefaultLanguageHighlighterColors.NUMBER);
     public static final TextAttributesKey BOOLEAN =
-            createTextAttributesKey("OMNET_INI_BOOLEAN", DefaultLanguageHighlighterColors.KEYWORD);
-
+            createTextAttributesKey("OMNET_INI_BOOLEAN",  DefaultLanguageHighlighterColors.KEYWORD);
+    public static final TextAttributesKey VALUE =
+            createTextAttributesKey("OMNET_INI_VALUE",    DefaultLanguageHighlighterColors.STRING);
     public static final TextAttributesKey COMMENT =
-            createTextAttributesKey("OMNET_INI_COMMENT", DefaultLanguageHighlighterColors.LINE_COMMENT);
-
+            createTextAttributesKey("OMNET_INI_COMMENT",  DefaultLanguageHighlighterColors.LINE_COMMENT);
     public static final TextAttributesKey BAD_CHAR =
             createTextAttributesKey("OMNET_INI_BAD_CHARACTER", HighlighterColors.BAD_CHARACTER);
 
-    private static final TextAttributesKey[] SECTION_KEYS = new TextAttributesKey[]{SECTION};
-    private static final TextAttributesKey[] KEY_KEYS = new TextAttributesKey[]{KEY};
-    private static final TextAttributesKey[] EQ_KEYS = new TextAttributesKey[]{EQ};
+    // ── New keys ─────────────────────────────────────────────────────────
+    public static final TextAttributesKey FUNC_CALL =
+            createTextAttributesKey("OMNET_INI_FUNC_CALL", DefaultLanguageHighlighterColors.FUNCTION_CALL);
+    public static final TextAttributesKey ARITH_OP =
+            createTextAttributesKey("OMNET_INI_ARITH_OP",  DefaultLanguageHighlighterColors.OPERATION_SIGN);
+    public static final TextAttributesKey MAP_KEY =
+            createTextAttributesKey("OMNET_INI_MAP_KEY",   DefaultLanguageHighlighterColors.LABEL);
+    public static final TextAttributesKey BRACKET =
+            createTextAttributesKey("OMNET_INI_BRACKET",   DefaultLanguageHighlighterColors.BRACKETS);
+    public static final TextAttributesKey BRACE =
+            createTextAttributesKey("OMNET_INI_BRACE",     DefaultLanguageHighlighterColors.BRACES);
+    public static final TextAttributesKey COMMA =
+            createTextAttributesKey("OMNET_INI_COMMA",     DefaultLanguageHighlighterColors.COMMA);
 
-    private static final TextAttributesKey[] STRING_KEYS = new TextAttributesKey[]{STRING};
-    private static final TextAttributesKey[] NUMBER_KEYS = new TextAttributesKey[]{NUMBER};
-    private static final TextAttributesKey[] BOOLEAN_KEYS = new TextAttributesKey[]{BOOLEAN};
-    private static final TextAttributesKey[] VALUE_KEYS = new TextAttributesKey[]{VALUE};
-
-    private static final TextAttributesKey[] COMMENT_KEYS = new TextAttributesKey[]{COMMENT};
-    private static final TextAttributesKey[] BAD_CHAR_KEYS = new TextAttributesKey[]{BAD_CHAR};
-    private static final TextAttributesKey[] EMPTY_KEYS = new TextAttributesKey[0];
+    // ── Key arrays ───────────────────────────────────────────────────────
+    private static final TextAttributesKey[] SECTION_KEYS = {SECTION};
+    private static final TextAttributesKey[] KEY_KEYS     = {KEY};
+    private static final TextAttributesKey[] EQ_KEYS      = {EQ};
+    private static final TextAttributesKey[] STRING_KEYS  = {STRING};
+    private static final TextAttributesKey[] NUMBER_KEYS  = {NUMBER};
+    private static final TextAttributesKey[] BOOLEAN_KEYS = {BOOLEAN};
+    private static final TextAttributesKey[] VALUE_KEYS   = {VALUE};
+    private static final TextAttributesKey[] COMMENT_KEYS = {COMMENT};
+    private static final TextAttributesKey[] BAD_KEYS     = {BAD_CHAR};
+    private static final TextAttributesKey[] FUNC_KEYS    = {FUNC_CALL};
+    private static final TextAttributesKey[] ARITH_KEYS   = {ARITH_OP};
+    private static final TextAttributesKey[] MAP_KEY_KEYS = {MAP_KEY};
+    private static final TextAttributesKey[] BRACKET_KEYS = {BRACKET};
+    private static final TextAttributesKey[] BRACE_KEYS   = {BRACE};
+    private static final TextAttributesKey[] COMMA_KEYS   = {COMMA};
+    private static final TextAttributesKey[] EMPTY_KEYS   = {};
 
     @Override
-    public @NotNull Lexer getHighlightingLexer() {
-        return new IniLexerAdapter();
-    }
+    public @NotNull Lexer getHighlightingLexer() { return new IniLexerAdapter(); }
 
     @Override
-    public TextAttributesKey @NotNull [] getTokenHighlights(IElementType tokenType) {
-        if (tokenType == IniTypes.SECTION_HEADER) return SECTION_KEYS;
-        if (tokenType == IniTypes.KEY) return KEY_KEYS;
-        if (tokenType == IniTypes.EQ) return EQ_KEYS;
-
-        if (tokenType == IniTypes.STRING) return STRING_KEYS;
-        if (tokenType == IniTypes.NUMBER) return NUMBER_KEYS;
-        if (tokenType == IniTypes.BOOLEAN) return BOOLEAN_KEYS;
-        if (tokenType == IniTypes.VALUE) return VALUE_KEYS;
-
-        if (tokenType == IniTypes.COMMENT) return COMMENT_KEYS;
-        if (tokenType == TokenType.BAD_CHARACTER) return BAD_CHAR_KEYS;
-
+    public TextAttributesKey @NotNull [] getTokenHighlights(IElementType t) {
+        if (t == IniTypes.SECTION_HEADER) return SECTION_KEYS;
+        if (t == IniTypes.KEY)            return KEY_KEYS;
+        if (t == IniTypes.EQ)             return EQ_KEYS;
+        if (t == IniTypes.STRING)         return STRING_KEYS;
+        if (t == IniTypes.NUMBER)         return NUMBER_KEYS;
+        if (t == IniTypes.BOOLEAN)        return BOOLEAN_KEYS;
+        if (t == IniTypes.VALUE)          return VALUE_KEYS;
+        if (t == IniTypes.COMMENT)        return COMMENT_KEYS;
+        if (t == TokenType.BAD_CHARACTER) return BAD_KEYS;
+        if (t == IniTypes.FUNC_CALL)      return FUNC_KEYS;
+        if (t == IniTypes.ARITH_OP)       return ARITH_KEYS;
+        if (t == IniTypes.MAP_KEY)        return MAP_KEY_KEYS;
+        if (t == IniTypes.LBRACK)         return BRACKET_KEYS;
+        if (t == IniTypes.RBRACK)         return BRACKET_KEYS;
+        if (t == IniTypes.LBRACE)         return BRACE_KEYS;
+        if (t == IniTypes.RBRACE)         return BRACE_KEYS;
+        if (t == IniTypes.COMMA)          return COMMA_KEYS;
         return EMPTY_KEYS;
     }
 }

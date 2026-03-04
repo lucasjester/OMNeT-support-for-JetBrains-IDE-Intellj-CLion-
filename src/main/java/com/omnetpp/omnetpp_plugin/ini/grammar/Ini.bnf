@@ -10,14 +10,61 @@
   elementTypeHolderClass="com.omnetpp.omnetpp_plugin.ini.psi.IniTypes"
   elementTypeClass="com.omnetpp.omnetpp_plugin.ini.psi.IniElementType"
   tokenTypeClass="com.omnetpp.omnetpp_plugin.ini.psi.IniTokenType"
+
+  tokens = [
+    // structural punctuation
+    LBRACK   = "["
+    RBRACK   = "]"
+    LBRACE   = "{"
+    RBRACE   = "}"
+    COMMA    = ","
+    // all lexer-emitted value tokens must be listed here
+    // so Grammar-Kit doesn't re-generate them as duplicates
+    VALUE    = "VALUE"
+    NUMBER   = "NUMBER"
+    STRING   = "STRING"
+    BOOLEAN  = "BOOLEAN"
+    FUNC_CALL = "FUNC_CALL"
+    ARITH_OP  = "ARITH_OP"
+    MAP_KEY   = "MAP_KEY"
+    KEY       = "KEY"
+    EQ        = "EQ"
+    COMMENT   = "COMMENT"
+    SECTION_HEADER = "SECTION_HEADER"
+  ]
 }
 
 iniFile ::= item*
 
-private item ::= section | keyValue | COMMENT | WHITE_SPACE
+private item ::= section
+               | keyValue
+               | COMMENT
+               | WHITE_SPACE
 
 section ::= SECTION_HEADER
 
-keyValue ::= KEY EQ value?
+keyValue ::= KEY EQ inivalue?
 
-private value ::= NUMBER | STRING | BOOLEAN | VALUE
+inivalue ::= arrayValue
+        | scalarSeq
+
+private scalarSeq ::= scalar (ARITH_OP scalar)*
+
+private scalar ::= NUMBER
+                 | STRING
+                 | BOOLEAN
+                 | FUNC_CALL
+                 | VALUE
+
+arrayValue ::= LBRACK arrayContent? RBRACK
+
+private arrayContent ::= arrayElement (COMMA arrayElement)*
+
+arrayElement ::= objectValue
+               | scalarSeq
+
+objectValue ::= LBRACE objectContent? RBRACE
+
+private objectContent ::= mapEntry (COMMA mapEntry)*
+
+mapEntry ::= MAP_KEY scalar

@@ -1,15 +1,18 @@
-.gradle
+############################
+# Gradle
+############################
+.gradle/
 build/
 !gradle/wrapper/gradle-wrapper.jar
 !**/src/main/**/build/
 !**/src/test/**/build/
 .kotlin
 
-### IntelliJ IDEA ###
-.idea/modules.xml
-.idea/jarRepositories.xml
-.idea/compiler.xml
-.idea/libraries/
+
+############################
+# IntelliJ IDEA (local IDE config)
+############################
+.idea/
 *.iws
 *.iml
 *.ipr
@@ -17,7 +20,40 @@ out/
 !**/src/main/**/out/
 !**/src/test/**/out/
 
-### Eclipse ###
+
+############################
+# IntelliJ Platform Gradle Plugin (local IDE downloads)
+############################
+.intellijPlatform/
+
+
+############################
+# IntelliJ sandbox (runtime when running plugin)
+# Ignore ONLY root-level run/sandbox
+############################
+/run/
+/sandbox/
+build/idea-sandbox/
+
+
+############################
+# Grammar-Kit / JFlex generated sources
+############################
+gen/
+src/main/gen/
+src/gen/
+
+
+############################
+# Local tool jars
+############################
+jflex-1.9.2.jar
+
+
+############################
+# Other IDEs
+############################
+# Eclipse
 .apt_generated
 .classpath
 .factorypath
@@ -29,36 +65,19 @@ bin/
 !**/src/main/**/bin/
 !**/src/test/**/bin/
 
-### NetBeans ###
+# NetBeans
 /nbproject/private/
 /nbbuild/
 /dist/
 /nbdist/
 /.nb-gradle/
 
-### VS Code ###
+# VS Code
 .vscode/
 
-### Mac OS ###
+
+############################
+# OS
+############################
 .DS_Store
-
-### IntelliJ Grammar-Kit / JFlex generated sources ###
-gen/
-src/main/gen/
-src/gen/
-
-### Sandbox IDE (created when you run the plugin) ###
-run/
-sandbox/
-
-### IntelliJ plugin build artifacts ###
-build/idea-sandbox/
-
-### IntelliJ Platform Gradle plugin cache / local IDE downloads ###
-.intellijPlatform/
-
-### IntelliJ project files (recommended to not commit) ###
-.idea/
-
-### Local jars / tools ###
-jflex-1.9.2.jar
+Thumbs.db

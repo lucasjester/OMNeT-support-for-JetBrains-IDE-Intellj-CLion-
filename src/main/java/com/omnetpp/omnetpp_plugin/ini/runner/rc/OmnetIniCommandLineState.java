@@ -59,6 +59,8 @@ public class OmnetIniCommandLineState extends CommandLineState {
         List<String> common = ArgsSplitter.split(settings.getCommonArgs());
         cmd.addParameters(common);
 
+        //cmd.addParameters("-u", "Cmdenv");
+
         // NED search path
         cmd.addParameters("-n", ".");
 
