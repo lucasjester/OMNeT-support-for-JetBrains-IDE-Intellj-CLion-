@@ -8,9 +8,7 @@
 
     <extensions defaultExtensionNs="com.intellij">
 
-
-
-        <!-- ✅ Register the file type (this is what makes the file icon show) -->
+        <!-- ── NED ──────────────────────────────────────────────────────── -->
         <fileType
                 name="NED"
                 implementationClass="com.omnetpp.omnetpp_plugin.ned.NedFileType"
@@ -30,11 +28,27 @@
                 language="NED"
                 implementation="com.omnetpp.omnetpp_plugin.ned.references.NedReferenceContributor"/>
 
-        <!-- INI stays as you have it -->
+        <!-- ── INI ──────────────────────────────────────────────────────── -->
         <fileType name="OMNeT++ INI"
                   language="OMNET_INI"
                   implementationClass="com.omnetpp.omnetpp_plugin.ini.IniFileType"
                   extensions="ini"/>
+
+        <lang.parserDefinition language="OMNET_INI"
+                               implementationClass="com.omnetpp.omnetpp_plugin.ini.IniParserDefinition"/>
+
+        <lang.syntaxHighlighterFactory
+                language="OMNET_INI"
+                implementationClass="com.omnetpp.omnetpp_plugin.ini.highlighting.IniSyntaxHighlighterFactory"/>
+
+        <colorSettingsPage implementation="com.omnetpp.omnetpp_plugin.ini.highlighting.IniColorSettingsPage"/>
+
+        <!--
+            NEW: resolves  network = SomeNetwork  in .ini files
+                 to the matching  network SomeNetwork { }  in .ned files.
+        -->
+        <gotoDeclarationHandler
+                implementation="com.omnetpp.omnetpp_plugin.ini.references.IniNetworkGoToDeclarationHandler"/>
 
         <codeInsight.lineMarkerProvider
                 language="OMNET_INI"
@@ -48,17 +62,6 @@
         <configurationType implementation="com.omnetpp.omnetpp_plugin.ini.runner.rc.OmnetIniRunConfigurationType"/>
 
         <runConfigurationProducer implementation="com.omnetpp.omnetpp_plugin.ini.runner.rc.OmnetIniRunConfigurationProducer"/>
-
-
-        <lang.parserDefinition language="OMNET_INI"
-                               implementationClass="com.omnetpp.omnetpp_plugin.ini.IniParserDefinition"/>
-
-
-        <lang.syntaxHighlighterFactory
-                language="OMNET_INI"
-                implementationClass="com.omnetpp.omnetpp_plugin.ini.highlighting.IniSyntaxHighlighterFactory"/>
-
-        <colorSettingsPage implementation="com.omnetpp.omnetpp_plugin.ini.highlighting.IniColorSettingsPage"/>
 
     </extensions>
 </idea-plugin>
