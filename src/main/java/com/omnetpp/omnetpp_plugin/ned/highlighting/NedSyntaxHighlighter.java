@@ -166,7 +166,7 @@ public class NedSyntaxHighlighter extends SyntaxHighlighterBase {
                 NedTypes.POWER,
                 NedTypes.ARROW,
                 NedTypes.DOTDOT,
-                NedTypes.DOLLAR
+                NedTypes.AT
         };
         for (IElementType o : ops) {
             KEYS.put(o, OPERATOR);

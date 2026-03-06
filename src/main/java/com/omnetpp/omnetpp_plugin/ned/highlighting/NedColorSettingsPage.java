@@ -80,22 +80,6 @@ public class NedColorSettingsPage implements ColorSettingsPage {
             """;
     }
 
-    // Demo NED snippet for highlighting preview
-            //package demo.net;
-
-    //network DemoNetwork
-    //{
-        //submodules:
-        //host: StandardHost {
-        //parameters:
-        //@display("i=device/pc");
-        //numApps = 3;
-        //name = "example";
-    //}
-    //}
-
-
-
 
     @Override
     public @Nullable Map<String, TextAttributesKey> getAdditionalHighlightingTagToDescriptorMap() {

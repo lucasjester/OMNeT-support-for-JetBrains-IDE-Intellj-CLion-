@@ -98,7 +98,7 @@ NAME             = [A-Za-z_][A-Za-z0-9_]*
     "}"                  { return RBRACE; }
     "["                  { return LBRACK; }
     "]"                  { return RBRACK; }
-    "@"                  { return DOLLAR; }
+    "@"                  { return AT; }
     "="                  { return ASSIGN; }
     "=="                 { return EQ; }
     "!="                 { return NE; }

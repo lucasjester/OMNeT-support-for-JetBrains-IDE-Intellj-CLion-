@@ -56,8 +56,8 @@ importname ::= (NAME | "*" | "**")+
 propertydecl ::= propertydecl_header opt_inline_properties SEMI
                | propertydecl_header LPAREN opt_propertydecl_keys RPAREN opt_inline_properties SEMI
 
-//propertydecl_header ::= (PROPERTY DOLLAR NAME | PROPERTY DOLLAR NAME LBRACK RBRACK)
-propertydecl_header ::=  (PROPERTY DOLLAR NAME (LBRACK RBRACK)?)
+//propertydecl_header ::= (PROPERTY AT NAME | PROPERTY AT NAME LBRACK RBRACK)
+propertydecl_header ::=  (PROPERTY AT NAME (LBRACK RBRACK)?)
 
 opt_propertydecl_keys ::= propertydecl_keys?
 
@@ -71,7 +71,7 @@ fileproperty ::= property_namevalue SEMI
 property_namevalue ::= property_name (LPAREN opt_property_keys RPAREN)?
 
 
-property_name ::= DOLLAR NAME (LBRACK NAME RBRACK)?
+property_name ::= AT NAME (LBRACK NAME RBRACK)?
 
 
 opt_property_keys ::= property_keys?
@@ -215,7 +215,7 @@ pattern_elem ::= pattern_name ((LBRACK pattern_index RBRACK)|(LBRACK "*" RBRACK)
 
 
 pattern_name ::= pattern_atom (NAME | LBRACE pattern_index RBRACE | "*")*
-pattern_atom  ::= NAME (DOLLAR NAME)?
+pattern_atom  ::= NAME (AT NAME)?
                 | CHANNEL
                 | LBRACE pattern_index RBRACE
                 | "*"
@@ -342,7 +342,7 @@ rightgate ::= NAME opt_subgate ((vector)|("++"))?
 parentrightgate ::= NAME opt_subgate ((vector)|("++"))?
 
 
-opt_subgate ::= (DOLLAR NAME)?
+opt_subgate ::= (AT NAME)?
 
 
 channelspec ::= channelspec_header (LBRACE opt_paramblock RBRACE)?
@@ -433,7 +433,7 @@ funcname ::= NAME
            | INT
            | DOUBLE
            | STRING
-           | OBJECT_DEF //object
+           | OBJECTDEF //object
            | XML
            | XMLDOC
 

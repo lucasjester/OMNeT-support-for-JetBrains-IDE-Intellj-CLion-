@@ -1,5 +1,6 @@
 package com.omnetpp.omnetpp_plugin.ini;
 
+import com.intellij.psi.TokenType;
 import com.omnetpp.omnetpp_plugin.ini.psi.IniTypes;
 import com.intellij.lang.ASTNode;
 import com.intellij.lang.ParserDefinition;
@@ -59,6 +60,6 @@ public class IniParserDefinition implements ParserDefinition {
 
     @Override
     public @NotNull TokenSet getWhitespaceTokens() {
-        return TokenSet.WHITE_SPACE;
+        return TokenSet.create(TokenType.WHITE_SPACE);
     }
 }
