@@ -9,7 +9,7 @@ import com.intellij.lexer.FlexLexer;
 import static com.omnetpp.omnetpp_plugin.ned.psi.NedTypes.*;
 
 %%
-
+%public
 %class NedLexer
 %implements FlexLexer
 %unicode

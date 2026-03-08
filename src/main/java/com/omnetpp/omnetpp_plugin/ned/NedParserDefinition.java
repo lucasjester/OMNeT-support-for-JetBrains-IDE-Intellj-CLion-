@@ -1,5 +1,4 @@
 package com.omnetpp.omnetpp_plugin.ned;
-import com.omnetpp.omnetpp_plugin.NedLexerAdapter;
 import com.omnetpp.omnetpp_plugin.ned.lexer.NedTokenSets;
 import com.omnetpp.omnetpp_plugin.parser.NedParser;
 import com.intellij.lang.ASTNode;
