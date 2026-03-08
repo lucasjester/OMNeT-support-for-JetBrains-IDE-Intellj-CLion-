@@ -127,6 +127,7 @@ NAME             = [A-Za-z_][A-Za-z0-9_]*
     "##"                 { return DHT; }
     "<<"                 { return LTLT; }
     ">>"                 { return GTGT; }
+    "$"                  { return DOLLAR; }
 
 
 

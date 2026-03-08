@@ -20,7 +20,7 @@
 
 }
 
-nedfile ::= definitions
+nedfile ::= definitions?
 
 
 definitions ::= definition+
@@ -86,7 +86,7 @@ property_key ::= property_literal ASSIGN property_values
 
 property_values ::= property_value (COMMA property_value)*
 
-property_value ::= property_literal?
+property_value ::= (expression | property_literal)?
 
 
 //property_literal ::= (CHAR | STRINGCONSTANT)+
@@ -215,7 +215,7 @@ pattern_elem ::= pattern_name ((LBRACK pattern_index RBRACK)|(LBRACK "*" RBRACK)
 
 
 pattern_name ::= pattern_atom (NAME | LBRACE pattern_index RBRACE | "*")*
-pattern_atom  ::= NAME (AT NAME)?
+pattern_atom  ::= NAME (DOLLAR NAME)?
                 | CHANNEL
                 | LBRACE pattern_index RBRACE
                 | "*"
@@ -342,7 +342,7 @@ rightgate ::= NAME opt_subgate ((vector)|("++"))?
 parentrightgate ::= NAME opt_subgate ((vector)|("++"))?
 
 
-opt_subgate ::= (AT NAME)?
+opt_subgate ::= (DOLLAR NAME)?
 
 
 channelspec ::= channelspec_header (LBRACE opt_paramblock RBRACE)?
@@ -417,6 +417,7 @@ key ::= STRINGCONSTANT
       | quantity
       | MINUS INTCONSTANT
       | MINUS REALCONSTANT
+      | MINUS quantity
       | NAN
       | INF
       | TRUE
@@ -437,8 +438,8 @@ funcname ::= NAME
            | XML
            | XMLDOC
 
-qname_elem ::= NAME
-             | NAME LBRACK expr RBRACK
+qname_elem ::= NAME LBRACK expr RBRACK
+             | NAME
              | THIS
              | PARENT
 

@@ -4,12 +4,14 @@ import com.intellij.lang.ASTNode;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.application.ReadAction;
 import com.intellij.openapi.project.Project;
-import com.intellij.openapi.roots.ProjectFileIndex;
 import com.intellij.openapi.vfs.LocalFileSystem;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.*;
+import com.intellij.psi.search.FileTypeIndex;
+import com.intellij.psi.search.GlobalSearchScope;
 import com.intellij.psi.util.PsiTreeUtil;
 import com.omnetpp.omnetpp_plugin.ini.runner.config.OmnetRunSettings;
+import com.omnetpp.omnetpp_plugin.ned.NedFileType;
 import com.omnetpp.omnetpp_plugin.ned.psi.*;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -24,40 +26,36 @@ public final class NedDeclarationSearch {
 
     private NedDeclarationSearch() {}
 
-    // ── Index Entry: Datei + Offset der Deklaration ──────────────────────────
-
-    private record IndexEntry(@NotNull VirtualFile file, int offset) {}
-
-    private static final Map<String, IndexEntry> nameIndex   = new ConcurrentHashMap<>();
-    private static volatile boolean              indexReady  = false;
-    private static volatile String               indexedPaths = null;
-
-    // Erkennt:  simple Foo  |  module Foo  |  network Foo  |  channel Foo  etc.
+    // Matches:  simple Foo | module Foo | network Foo | channel Foo  etc.
+    // group(1) = the declaration name, m.start(1) = its character offset
     private static final Pattern DECL_PATTERN = Pattern.compile(
-            "(?:^|\\n)[ \\t]*(?:simple|module|network|channel|channelinterface|moduleinterface)[ \\t]+(\\w+)"
+            "(?m)^[ \\t]*(?:simple|module|network|channel|channelinterface|moduleinterface)[ \\t]+(\\w+)"
     );
 
-    // ── Öffentliche Such-API ─────────────────────────────────────────────────
+    // Async completion index (name → file + offset)
+    private record IndexEntry(@NotNull VirtualFile file, int offset) {}
+    private static final Map<String, IndexEntry> nameIndex    = new ConcurrentHashMap<>();
+    private static volatile boolean              indexReady   = false;
+    private static volatile String               indexedPaths = null;
+
+    // ═════════════════════════════════════════════════════════════════════════
+    // Public API
+    // ═════════════════════════════════════════════════════════════════════════
 
     @Nullable
     public static PsiElement findModuleType(@NotNull Project project,
                                             @NotNull PsiFile currentFile,
                                             @NotNull String targetName) {
         ensureIndexUpToDate();
-
         String simpleName    = simpleName(targetName);
         String packagePrefix = packagePrefix(targetName);
 
-        // 1. Aktuelle Datei
-        PsiElement found = findModuleInFile(currentFile, simpleName, packagePrefix);
+        // 1. Current file — PSI tree search is reliable here
+        PsiElement found = findInCurrentFilePsi(currentFile, simpleName, packagePrefix, false);
         if (found != null) return found;
 
-        // 2. Eigene Projektdateien
-        found = searchProjectFiles(project, currentFile, simpleName, packagePrefix, false);
-        if (found != null) return found;
-
-        // 3. Externe Datei via Index + Offset → kein Tree-Traversal
-        return indexReady ? resolveViaIndex(project, simpleName, packagePrefix) : null;
+        // 2 + 3. Text scan → offset-based navigation (bypasses PSI tree issues)
+        return resolveByTextScan(project, currentFile.getVirtualFile(), simpleName, packagePrefix);
     }
 
     @Nullable
@@ -65,30 +63,27 @@ public final class NedDeclarationSearch {
                                              @NotNull PsiFile currentFile,
                                              @NotNull String targetName) {
         ensureIndexUpToDate();
-
         String simpleName    = simpleName(targetName);
         String packagePrefix = packagePrefix(targetName);
 
-        PsiElement found = findChannelInFile(currentFile, simpleName, packagePrefix);
+        PsiElement found = findInCurrentFilePsi(currentFile, simpleName, packagePrefix, true);
         if (found != null) return found;
 
-        found = searchProjectFiles(project, currentFile, simpleName, packagePrefix, true);
-        if (found != null) return found;
-
-        return indexReady ? resolveViaIndex(project, simpleName, packagePrefix) : null;
+        return resolveByTextScan(project, currentFile.getVirtualFile(), simpleName, packagePrefix);
     }
 
     @NotNull
     public static List<String> allModuleTypeNames(@NotNull Project project) {
         List<String> names = new ArrayList<>(nameIndex.keySet());
-        PsiManager pm = PsiManager.getInstance(project);
-        ProjectFileIndex.getInstance(project).iterateContent(vf -> {
-            if (!vf.isDirectory() && "ned".equals(vf.getExtension())) {
+        try {
+            Collection<VirtualFile> nedFiles = ReadAction.compute(() ->
+                    FileTypeIndex.getFiles(NedFileType.INSTANCE, GlobalSearchScope.allScope(project)));
+            PsiManager pm = PsiManager.getInstance(project);
+            for (VirtualFile vf : nedFiles) {
                 PsiFile pf = ReadAction.compute(() -> pm.findFile(vf));
                 if (pf instanceof NedFile nf) collectModuleNames(nf, names);
             }
-            return true;
-        });
+        } catch (Exception ignored) {}
         return names;
     }
 
@@ -97,37 +92,159 @@ public final class NedDeclarationSearch {
         return new ArrayList<>(nameIndex.keySet());
     }
 
-    // ── Offset-basierte Auflösung ─────────────────────────────────────────────
-    // Kein PsiTreeUtil-Traversal — direkt zum gespeicherten Offset springen.
+    // ═════════════════════════════════════════════════════════════════════════
+    // Step 1 — PSI tree search, only used for the currently-open file
+    // ═════════════════════════════════════════════════════════════════════════
 
     @Nullable
-    private static PsiElement resolveViaIndex(@NotNull Project project,
-                                              @NotNull String simpleName,
-                                              @Nullable String packagePrefix) {
-        IndexEntry entry = nameIndex.get(simpleName);
-        if (entry == null) return null;
+    private static PsiElement findInCurrentFilePsi(@NotNull PsiFile file,
+                                                   @NotNull String simpleName,
+                                                   @Nullable String packagePrefix,
+                                                   boolean channelOnly) {
+        if (packagePrefix != null && !fileMatchesPackage(file, packagePrefix)) return null;
+        return channelOnly ? findChannelInFilePsi(file, simpleName)
+                : findModuleInFilePsi(file, simpleName);
+    }
 
+    // ═════════════════════════════════════════════════════════════════════════
+    // Steps 2 + 3 — text scan → offset-based resolution
+    //
+    // We do NOT rely on PsiTreeUtil traversal for external files because
+    // our NED parser may not fully handle complex INET compound modules
+    // (TsnDevice, TsnSwitch, …). When the parse tree is incomplete,
+    // PsiTreeUtil finds nothing.
+    //
+    // Instead:
+    //   a) Find the file + char offset via regex (no PSI needed)
+    //   b) Open the file with PSI
+    //   c) Call pf.findElementAt(offset) to get the NAME leaf directly
+    //   d) Try walking UP to find the proper header element
+    //   e) If walk-up fails (broken parse tree), return the leaf itself —
+    //      IntelliJ will still navigate to the exact position in the file.
+    // ═════════════════════════════════════════════════════════════════════════
+
+    @Nullable
+    private static PsiElement resolveByTextScan(@NotNull Project project,
+                                                @Nullable VirtualFile excludeFile,
+                                                @NotNull String simpleName,
+                                                @Nullable String packagePrefix) {
+        // ── 2. Files IntelliJ already indexes (project + added libraries) ────
+        try {
+            Collection<VirtualFile> nedFiles = ReadAction.compute(() ->
+                    FileTypeIndex.getFiles(NedFileType.INSTANCE, GlobalSearchScope.allScope(project)));
+            PsiElement found = scanAndResolve(project, nedFiles, excludeFile, simpleName, packagePrefix);
+            if (found != null) return found;
+        } catch (Exception ignored) {}
+
+        // ── 3. Configured NED paths (Settings → OMNeT++ Run) ─────────────────
+        String nedPaths = OmnetRunSettings.getInstance().getNedPaths();
+        if (nedPaths != null && !nedPaths.isBlank()) {
+            for (String pathStr : splitSemicolon(nedPaths)) {
+                VirtualFile dir = LocalFileSystem.getInstance().findFileByPath(pathStr);
+                if (dir == null || !dir.isDirectory()) continue;
+
+                List<VirtualFile> dirFiles = new ArrayList<>();
+                collectNedFiles(dir, dirFiles);
+
+                PsiElement found = scanAndResolve(project, dirFiles, excludeFile, simpleName, packagePrefix);
+                if (found != null) return found;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * For each VirtualFile in {@code files}: text-scan for the declaration,
+     * then resolve by offset. Returns the first match found.
+     */
+    @Nullable
+    private static PsiElement scanAndResolve(@NotNull Project project,
+                                             @NotNull Collection<VirtualFile> files,
+                                             @Nullable VirtualFile excludeFile,
+                                             @NotNull String simpleName,
+                                             @Nullable String packagePrefix) {
+        PsiManager pm = PsiManager.getInstance(project);
+
+        for (VirtualFile vf : files) {
+            if (vf.equals(excludeFile) || vf.isDirectory()) continue;
+            if (!"ned".equals(vf.getExtension()))           continue;
+
+            // ── Fast text scan: find the declaration offset ───────────────────
+            String content;
+            try {
+                content = new String(vf.contentsToByteArray(), StandardCharsets.UTF_8);
+            } catch (Exception e) {
+                continue;
+            }
+
+            if (!content.contains(simpleName)) continue;   // quick pre-check
+            int offset = findDeclOffset(content, simpleName);
+            if (offset < 0) continue;
+
+            // ── Open PSI file ─────────────────────────────────────────────────
+            PsiFile pf;
+            try {
+                pf = ReadAction.compute(() -> pm.findFile(vf));
+            } catch (Exception e) {
+                continue;
+            }
+            if (pf == null) continue;
+
+            // ── Optional package filter ───────────────────────────────────────
+            if (packagePrefix != null) {
+                try {
+                    if (!fileMatchesPackage(pf, packagePrefix)) continue;
+                } catch (Exception ignored) {}
+            }
+
+            // ── Resolve at offset ─────────────────────────────────────────────
+            PsiElement result = resolveAtOffset(pf, offset, simpleName);
+            if (result != null) return result;
+        }
+        return null;
+    }
+
+    /** Returns the char offset of the NAME in the first matching declaration, or -1. */
+    private static int findDeclOffset(@NotNull String content, @NotNull String name) {
+        Matcher m = DECL_PATTERN.matcher(content);
+        while (m.find()) {
+            if (name.equals(m.group(1))) return m.start(1);
+        }
+        return -1;
+    }
+
+    /**
+     * Jumps to {@code offset} in the PSI file and tries to return the best
+     * PsiElement to use as a navigation target:
+     *
+     *   1. Walk UP from the leaf to find a proper header (NedSimplemoduleheader,
+     *      NedCompoundmoduleheader, etc.) — works when the parser handled the file.
+     *   2. If no header is found (parser produced error/incomplete tree), fall back
+     *      to returning the leaf itself.  IntelliJ will still navigate to the exact
+     *      line/column, so Ctrl+Click always lands at the right spot.
+     */
+    @Nullable
+    private static PsiElement resolveAtOffset(@NotNull PsiFile pf,
+                                              int offset,
+                                              @NotNull String simpleName) {
         return ReadAction.compute(() -> {
-            PsiFile pf = PsiManager.getInstance(project).findFile(entry.file());
-            if (!(pf instanceof NedFile nf)) return null;
-
-            if (packagePrefix != null && !fileMatchesPackage(nf, packagePrefix)) return null;
-
-            // Direkt zum Offset springen — kein Tree-Traversal nötig
-            PsiElement leaf = pf.findElementAt(entry.offset());
+            PsiElement leaf = pf.findElementAt(offset);
             if (leaf == null) return null;
 
-            // Von dem Leaf-Element nach oben zum Header-Element laufen
+            // Try to find a proper named-header ancestor
             PsiElement candidate = leaf.getParent();
-            while (candidate != null && !(candidate instanceof NedFile)) {
-                if (isModuleOrChannelHeader(candidate, simpleName)) return candidate;
+            while (candidate != null && !(candidate instanceof PsiFile)) {
+                if (isNamedHeader(candidate, simpleName)) return candidate;
                 candidate = candidate.getParent();
             }
-            return null;
+
+            // Walk-up failed (likely incomplete parse tree for this file).
+            // Return the leaf — navigation still lands at the right position.
+            return leaf;
         });
     }
 
-    private static boolean isModuleOrChannelHeader(@NotNull PsiElement e, @NotNull String name) {
+    private static boolean isNamedHeader(@NotNull PsiElement e, @NotNull String name) {
         if (e instanceof NedSimplemoduleheader h)     return nameMatches(h.getNameIdentifier(), name);
         if (e instanceof NedCompoundmoduleheader h)   return nameMatches(h.getNameIdentifier(), name);
         if (e instanceof NedNetworkheader h)          return nameMatches(h.getNameIdentifier(), name);
@@ -137,73 +254,41 @@ public final class NedDeclarationSearch {
         return false;
     }
 
-    // ── Suche in Projektdateien (PSI, wenige Dateien) ────────────────────────
+    // ═════════════════════════════════════════════════════════════════════════
+    // PSI helpers — only called for the current open file (step 1)
+    // ═════════════════════════════════════════════════════════════════════════
 
     @Nullable
-    private static PsiElement searchProjectFiles(@NotNull Project project,
-                                                 @NotNull PsiFile exclude,
-                                                 @NotNull String simpleName,
-                                                 @Nullable String packagePrefix,
-                                                 boolean channelOnly) {
-        PsiManager pm = PsiManager.getInstance(project);
-        final PsiElement[] result = {null};
-
-        ProjectFileIndex.getInstance(project).iterateContent(vf -> {
-            if (vf.isDirectory() || !"ned".equals(vf.getExtension())) return true;
-            PsiFile pf = ReadAction.compute(() -> pm.findFile(vf));
-            if (!(pf instanceof NedFile nf) || pf.equals(exclude)) return true;
-
-            PsiElement found = channelOnly
-                    ? findChannelInFile(nf, simpleName, packagePrefix)
-                    : findModuleInFile(nf, simpleName, packagePrefix);
-            if (found != null) {
-                result[0] = found;
-                return false;
-            }
-            return true;
-        });
-        return result[0];
-    }
-
-    // ── Suche in einer einzelnen PSI-Datei ───────────────────────────────────
-
-    @Nullable
-    private static PsiElement findModuleInFile(@NotNull PsiFile file,
-                                               @NotNull String simpleName,
-                                               @Nullable String packagePrefix) {
-        if (packagePrefix != null && !fileMatchesPackage(file, packagePrefix)) return null;
-
+    private static PsiElement findModuleInFilePsi(@NotNull PsiFile file, @NotNull String name) {
         for (NedSimplemoduleheader h : PsiTreeUtil.findChildrenOfType(file, NedSimplemoduleheader.class)) {
-            if (nameMatches(h.getNameIdentifier(), simpleName)) return h;
+            if (nameMatches(h.getNameIdentifier(), name)) return h;
         }
         for (NedCompoundmoduleheader h : PsiTreeUtil.findChildrenOfType(file, NedCompoundmoduleheader.class)) {
-            if (nameMatches(h.getNameIdentifier(), simpleName)) return h;
+            if (nameMatches(h.getNameIdentifier(), name)) return h;
         }
         for (NedNetworkheader h : PsiTreeUtil.findChildrenOfType(file, NedNetworkheader.class)) {
-            if (nameMatches(h.getNameIdentifier(), simpleName)) return h;
+            if (nameMatches(h.getNameIdentifier(), name)) return h;
         }
         for (NedModuleinterfaceheader h : PsiTreeUtil.findChildrenOfType(file, NedModuleinterfaceheader.class)) {
-            if (nameMatches(h.getNameIdentifier(), simpleName)) return h;
+            if (nameMatches(h.getNameIdentifier(), name)) return h;
         }
         return null;
     }
 
     @Nullable
-    private static PsiElement findChannelInFile(@NotNull PsiFile file,
-                                                @NotNull String simpleName,
-                                                @Nullable String packagePrefix) {
-        if (packagePrefix != null && !fileMatchesPackage(file, packagePrefix)) return null;
-
+    private static PsiElement findChannelInFilePsi(@NotNull PsiFile file, @NotNull String name) {
         for (NedChannelheader h : PsiTreeUtil.findChildrenOfType(file, NedChannelheader.class)) {
-            if (nameMatches(h.getNameIdentifier(), simpleName)) return h;
+            if (nameMatches(h.getNameIdentifier(), name)) return h;
         }
         for (NedChannelinterfaceheader h : PsiTreeUtil.findChildrenOfType(file, NedChannelinterfaceheader.class)) {
-            if (nameMatchesAst(h, simpleName)) return h;
+            if (nameMatchesAst(h, name)) return h;
         }
         return null;
     }
 
-    // ── Index aufbauen ────────────────────────────────────────────────────────
+    // ═════════════════════════════════════════════════════════════════════════
+    // Async completion index
+    // ═════════════════════════════════════════════════════════════════════════
 
     private static void ensureIndexUpToDate() {
         String currentPaths = OmnetRunSettings.getInstance().getNedPaths();
@@ -217,43 +302,44 @@ public final class NedDeclarationSearch {
 
     private static void buildIndexAsync(@Nullable String nedPaths) {
         ApplicationManager.getApplication().executeOnPooledThread(() -> {
-            if (nedPaths == null || nedPaths.isBlank()) {
-                indexReady = true;
-                return;
-            }
+            if (nedPaths == null || nedPaths.isBlank()) { indexReady = true; return; }
             Map<String, IndexEntry> built = new HashMap<>();
             for (String path : splitSemicolon(nedPaths)) {
                 VirtualFile dir = LocalFileSystem.getInstance().findFileByPath(path);
-                if (dir != null && dir.isDirectory()) {
-                    indexDirectoryRecursively(dir, built);
-                }
+                if (dir != null && dir.isDirectory()) indexDirRecursively(dir, built);
             }
             nameIndex.putAll(built);
             indexReady = true;
         });
     }
 
-    /** Text-Scan: speichert Name + Zeichen-Offset der Deklaration. Kein PSI. */
-    private static void indexDirectoryRecursively(@NotNull VirtualFile dir,
-                                                  @NotNull Map<String, IndexEntry> index) {
+    private static void indexDirRecursively(@NotNull VirtualFile dir,
+                                            @NotNull Map<String, IndexEntry> index) {
         for (VirtualFile child : dir.getChildren()) {
             if (child.isDirectory()) {
-                indexDirectoryRecursively(child, index);
+                indexDirRecursively(child, index);
             } else if ("ned".equals(child.getExtension())) {
                 try {
                     String content = new String(child.contentsToByteArray(), StandardCharsets.UTF_8);
                     Matcher m = DECL_PATTERN.matcher(content);
                     while (m.find()) {
-                        String name   = m.group(1);
-                        int    offset = m.start(1); // Offset des Namens selbst
-                        index.putIfAbsent(name, new IndexEntry(child, offset));
+                        index.putIfAbsent(m.group(1), new IndexEntry(child, m.start(1)));
                     }
                 } catch (Exception ignored) {}
             }
         }
     }
 
-    // ── Hilfsmethoden ────────────────────────────────────────────────────────
+    // ═════════════════════════════════════════════════════════════════════════
+    // Utilities
+    // ═════════════════════════════════════════════════════════════════════════
+
+    private static void collectNedFiles(@NotNull VirtualFile dir, @NotNull List<VirtualFile> result) {
+        for (VirtualFile child : dir.getChildren()) {
+            if (child.isDirectory())                       collectNedFiles(child, result);
+            else if ("ned".equals(child.getExtension()))   result.add(child);
+        }
+    }
 
     private static boolean fileMatchesPackage(@NotNull PsiFile file, @NotNull String packagePrefix) {
         NedPackagedeclaration pkg = PsiTreeUtil.findChildOfType(file, NedPackagedeclaration.class);
@@ -275,16 +361,13 @@ public final class NedDeclarationSearch {
 
     private static void collectModuleNames(@NotNull NedFile file, @NotNull List<String> names) {
         for (NedSimplemoduleheader h : PsiTreeUtil.findChildrenOfType(file, NedSimplemoduleheader.class)) {
-            PsiElement id = h.getNameIdentifier();
-            if (id != null) names.add(id.getText());
+            PsiElement id = h.getNameIdentifier(); if (id != null) names.add(id.getText());
         }
         for (NedCompoundmoduleheader h : PsiTreeUtil.findChildrenOfType(file, NedCompoundmoduleheader.class)) {
-            PsiElement id = h.getNameIdentifier();
-            if (id != null) names.add(id.getText());
+            PsiElement id = h.getNameIdentifier(); if (id != null) names.add(id.getText());
         }
         for (NedNetworkheader h : PsiTreeUtil.findChildrenOfType(file, NedNetworkheader.class)) {
-            PsiElement id = h.getNameIdentifier();
-            if (id != null) names.add(id.getText());
+            PsiElement id = h.getNameIdentifier(); if (id != null) names.add(id.getText());
         }
     }
 
