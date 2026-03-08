@@ -12,9 +12,7 @@ public class NedReferenceContributor extends PsiReferenceContributor {
     @Override
     public void registerReferenceProviders(@NotNull PsiReferenceRegistrar registrar) {
 
-        // Channel type — dottedname that is a direct child of channelspec_header
-        // e.g.  a.out[0] --> FastChannel --> b.in[0]
-        //                    ^^^^^^^^^^^  resolved here
+        // Channel-Typ: dottedname direkt in channelspec_header
         registrar.registerReferenceProvider(
                 PlatformPatterns.psiElement(NedDottedname.class)
                         .withParent(NedChannelspecHeader.class),
@@ -22,16 +20,13 @@ public class NedReferenceContributor extends PsiReferenceContributor {
                     @Override
                     public PsiReference @NotNull [] getReferencesByElement(
                             @NotNull PsiElement element,
-                            @NotNull ProcessingContext context
-                    ) {
+                            @NotNull ProcessingContext context) {
                         return new PsiReference[]{ new NedChannelTypeReference(element) };
                     }
                 }
         );
 
-        // Module type — every other dottedname (submodule types, extends, like, ...)
-        // Registered AFTER the channel provider and with lower priority so IntelliJ
-        // prefers the channel provider when both patterns match.
+        // Modul-/Network-Typ: alle anderen dottednames
         registrar.registerReferenceProvider(
                 PlatformPatterns.psiElement(NedDottedname.class)
                         .andNot(PlatformPatterns.psiElement(NedDottedname.class)
@@ -40,8 +35,7 @@ public class NedReferenceContributor extends PsiReferenceContributor {
                     @Override
                     public PsiReference @NotNull [] getReferencesByElement(
                             @NotNull PsiElement element,
-                            @NotNull ProcessingContext context
-                    ) {
+                            @NotNull ProcessingContext context) {
                         return new PsiReference[]{ new NedModuleTypeReference(element) };
                     }
                 }
