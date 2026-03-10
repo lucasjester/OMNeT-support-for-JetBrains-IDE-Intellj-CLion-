@@ -90,7 +90,9 @@ property_value ::= (expression | property_literal)?
 
 
 //property_literal ::= (CHAR | STRINGCONSTANT)+
-property_literal ::= (CHAR | STRINGCONSTANT | NAME)+
+property_literal ::= (CHAR | STRINGCONSTANT | NAME | COLONCOLON
+                     | DOUBLE | INT | STRING | BOOL | OBJECTDEF | XML
+                     | XMLDOC | TRUE | FALSE | NAN | INF)+
 
 
 channeldefinition ::= channelheader LBRACE opt_paramblock RBRACE
@@ -443,8 +445,7 @@ qname_elem ::= NAME LBRACK expr RBRACK
              | THIS
              | PARENT
 
-qname ::= qname_elem (DOT qname_elem)*
-
+qname ::= qname_elem (DOT qname_elem | COLONCOLON qname_elem)*
 operator ::= INDEX
            | TYPENAME
            | qname DOT INDEX

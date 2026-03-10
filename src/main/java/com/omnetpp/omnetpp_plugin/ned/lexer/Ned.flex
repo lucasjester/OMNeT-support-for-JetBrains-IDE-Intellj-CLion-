@@ -87,6 +87,7 @@ NAME             = [A-Za-z_][A-Za-z0-9_]*
     "inf"                { return INF; }
 
     // --- Operators & Symbols ---
+    "::"                 { return COLONCOLON; }
     ":"                  { return COLON; }
     ";"                  { return SEMI; }
     ","                  { return COMMA; }

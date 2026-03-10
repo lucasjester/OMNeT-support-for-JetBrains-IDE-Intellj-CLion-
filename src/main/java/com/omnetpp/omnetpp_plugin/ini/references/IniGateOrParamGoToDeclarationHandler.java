@@ -11,6 +11,7 @@ import com.intellij.psi.search.GlobalSearchScope;
 import com.omnetpp.omnetpp_plugin.ini.psi.IniTypes;
 import com.omnetpp.omnetpp_plugin.ini.runner.config.OmnetRunSettings;
 import com.omnetpp.omnetpp_plugin.ned.NedFileType;
+import com.omnetpp.omnetpp_plugin.ned.psi.NedNamedElement;
 import org.jetbrains.annotations.Nullable;
 
 import java.nio.charset.StandardCharsets;
@@ -21,22 +22,20 @@ import java.util.regex.Pattern;
 
 public class IniGateOrParamGoToDeclarationHandler implements GotoDeclarationHandler {
 
-    // ── Patterns that match a gate or parameter declaration NAME ─────────────
+    // ── Regexes — group(1) is always the NAME token ──────────────────────────
 
-    /** group(1) = the NAME */
     private static Pattern gatePattern(String name) {
         return Pattern.compile(
                 "\\b(?:input|output|inout)\\s+(" + Pattern.quote(name) + ")\\b");
     }
 
-    /** group(1) = the NAME; handles optional `volatile` prefix */
     private static Pattern paramPattern(String name) {
         return Pattern.compile(
                 "\\b(?:volatile\\s+)?(?:bool|int|double|string|xml|object)\\s+("
                         + Pattern.quote(name) + ")\\b");
     }
 
-    // ── Keys that are OMNeT++ / INET infrastructure, not NED member names ────
+    // ── Keys that are OMNeT++ infrastructure, never NED member names ──────────
     private static final Set<String> SKIP_KEYS = Set.of(
             "typename", "bitrate", "numApps", "sim-time-limit", "network",
             "description", "repeat", "seed-set", "record-eventlog",
@@ -48,7 +47,7 @@ public class IniGateOrParamGoToDeclarationHandler implements GotoDeclarationHand
     );
 
     // ════════════════════════════════════════════════════════════════════════
-    // GotoDeclarationHandler entry point
+    // Entry point
     // ════════════════════════════════════════════════════════════════════════
 
     @Override
@@ -77,43 +76,26 @@ public class IniGateOrParamGoToDeclarationHandler implements GotoDeclarationHand
     // Name extraction
     // ════════════════════════════════════════════════════════════════════════
 
-    /**
-     * Extracts the member name from a dotted, possibly-wildcarded key.
-     *
-     * Examples:
-     *   **.eth[*].mac.masterPort          →  masterPort
-     *   *.client1.app[0].source.packetLength  →  packetLength
-     *   sim-time-limit                    →  sim-time-limit  (will be skipped)
-     *   typename                          →  typename        (will be skipped)
-     */
     @Nullable
     private static String extractMemberName(String keyText) {
         if (keyText == null || keyText.isBlank()) return null;
-
-        // Remove every [...] vector index
         String stripped = keyText.replaceAll("\\[[^\\]]*]", "");
-
-        // Take the last dot-separated segment
         int dot = stripped.lastIndexOf('.');
         String candidate = dot >= 0 ? stripped.substring(dot + 1) : stripped;
-
         candidate = candidate.trim();
         return candidate.isEmpty() ? null : candidate;
     }
 
     // ════════════════════════════════════════════════════════════════════════
-    // File scanning — IntelliJ-indexed NED files
+    // File collection
     // ════════════════════════════════════════════════════════════════════════
 
-    private void collectFromIndexedFiles(Project project,
-                                         String name,
-                                         List<PsiElement> results) {
+    private void collectFromIndexedFiles(Project project, String name, List<PsiElement> results) {
         try {
             Collection<VirtualFile> nedFiles =
                     com.intellij.openapi.application.ReadAction.compute(() ->
                             FileTypeIndex.getFiles(NedFileType.INSTANCE,
                                     GlobalSearchScope.allScope(project)));
-
             PsiManager pm = PsiManager.getInstance(project);
             for (VirtualFile vf : nedFiles) {
                 scanFile(project, pm, vf, name, results);
@@ -121,16 +103,9 @@ public class IniGateOrParamGoToDeclarationHandler implements GotoDeclarationHand
         } catch (Exception ignored) {}
     }
 
-    // ════════════════════════════════════════════════════════════════════════
-    // File scanning — user-configured NED paths (Settings → OMNeT++ Run)
-    // ════════════════════════════════════════════════════════════════════════
-
-    private void collectFromConfiguredNedPaths(Project project,
-                                               String name,
-                                               List<PsiElement> results) {
+    private void collectFromConfiguredNedPaths(Project project, String name, List<PsiElement> results) {
         String nedPaths = OmnetRunSettings.getInstance().getNedPaths();
         if (nedPaths == null || nedPaths.isBlank()) return;
-
         PsiManager pm = PsiManager.getInstance(project);
         for (String pathStr : splitSemicolon(nedPaths)) {
             VirtualFile dir = LocalFileSystem.getInstance().findFileByPath(pathStr);
@@ -145,16 +120,11 @@ public class IniGateOrParamGoToDeclarationHandler implements GotoDeclarationHand
     // Core scan: text-regex → offset → PSI element
     // ════════════════════════════════════════════════════════════════════════
 
-    private void scanFile(Project project,
-                          PsiManager pm,
-                          VirtualFile vf,
-                          String name,
-                          List<PsiElement> results) {
-
+    private void scanFile(Project project, PsiManager pm, VirtualFile vf,
+                          String name, List<PsiElement> results) {
         if (vf == null || vf.isDirectory()) return;
         if (!"ned".equals(vf.getExtension())) return;
 
-        // Quick pre-check before reading the whole file
         String content;
         try {
             content = new String(vf.contentsToByteArray(), StandardCharsets.UTF_8);
@@ -163,17 +133,14 @@ public class IniGateOrParamGoToDeclarationHandler implements GotoDeclarationHand
         }
         if (!content.contains(name)) return;
 
-        // Collect all declaration offsets for this name
         List<Integer> offsets = new ArrayList<>();
-        collectOffsets(content, gatePattern(name),  offsets);
+        collectOffsets(content, gatePattern(name), offsets);
         collectOffsets(content, paramPattern(name), offsets);
         if (offsets.isEmpty()) return;
 
-        // Open PSI file once, then resolve each offset
         PsiFile psiFile;
         try {
-            psiFile = com.intellij.openapi.application.ReadAction.compute(
-                    () -> pm.findFile(vf));
+            psiFile = com.intellij.openapi.application.ReadAction.compute(() -> pm.findFile(vf));
         } catch (Exception e) {
             return;
         }
@@ -185,50 +152,72 @@ public class IniGateOrParamGoToDeclarationHandler implements GotoDeclarationHand
         }
     }
 
-    /**
-     * Finds all start-of-group-1 offsets (i.e. the NAME token itself)
-     * for every match of {@code pattern} in {@code content}.
-     */
-    private static void collectOffsets(String content,
-                                       Pattern pattern,
-                                       List<Integer> offsets) {
+    private static void collectOffsets(String content, Pattern pattern, List<Integer> offsets) {
         Matcher m = pattern.matcher(content);
         while (m.find()) {
-            offsets.add(m.start(1));   // offset of the NAME, not the keyword
+            offsets.add(m.start(1));
         }
     }
 
     // ════════════════════════════════════════════════════════════════════════
     // PSI resolution at a character offset
+    //
+    // The PSI tree structure is:
+    //
+    //   NedSimplemoduleDefinition
+    //     ├─ NedSimplemoduleheader   ← implements NedNamedElement  (SIBLING)
+    //     ├─ LBRACE
+    //     ├─ opt_paramblock
+    //     │    └─ params
+    //     │         └─ NedParam      ← we land here via findElementAt()
+    //     └─ RBRACE
+    //
+    // The header is a SIBLING of the param block inside the definition node,
+    // NOT an ancestor of the param. Walking straight up from NedParam will
+    // reach the definition but skip past the header entirely.
+    //
+    // Fix: at each ancestor level, scan its DIRECT CHILDREN for a
+    // NedNamedElement. The first one found is the module header, which
+    // IntelliJ renders as "Gptp  (GptpShowcase.ned)" in the popup.
     // ════════════════════════════════════════════════════════════════════════
 
-    /**
-     * Jumps to {@code offset} in the PSI file.
-     *
-     * Walk-up strategy (best → fallback):
-     *   1. NedParam       – a parameter declaration line
-     *   2. NedGate        – a gate declaration line
-     *   3. Leaf itself    – works even when the parse tree is incomplete;
-     *                       IntelliJ still navigates to the right position.
-     */
     @Nullable
     private static PsiElement resolveAtOffset(PsiFile pf, int offset) {
         return com.intellij.openapi.application.ReadAction.compute(() -> {
             PsiElement leaf = pf.findElementAt(offset);
             if (leaf == null) return null;
 
-            // Walk up looking for a gate or param node
+            // Phase 1: walk up to confirm we are inside a gate or param node
+            PsiElement paramOrGate = null;
             PsiElement candidate = leaf.getParent();
             while (candidate != null && !(candidate instanceof PsiFile)) {
-                String className = candidate.getClass().getSimpleName();
-                // Grammar-Kit generates NedParamImpl and NedGateImpl
-                if (className.equals("NedParamImpl") || className.equals("NedGateImpl")) {
-                    return candidate;
+                String cn = candidate.getClass().getSimpleName();
+                if (cn.equals("NedParamImpl") || cn.equals("NedGateImpl")) {
+                    paramOrGate = candidate;
+                    break;
                 }
                 candidate = candidate.getParent();
             }
 
-            // Fallback: return the NAME leaf — navigation still lands correctly
+            // Phase 2: walk up to the definition, checking each level's
+            // direct children for a NedNamedElement sibling (the header).
+            if (paramOrGate != null) {
+                PsiElement up = paramOrGate.getParent();
+                while (up != null && !(up instanceof PsiFile)) {
+                    for (PsiElement child : up.getChildren()) {
+                        if (child instanceof NedNamedElement) {
+                            // Returns e.g. NedSimplemoduleheader "Gptp"
+                            // → popup shows "Gptp  (GptpShowcase.ned)"
+                            return child;
+                        }
+                    }
+                    up = up.getParent();
+                }
+                // Header not found — still return the param/gate line
+                return paramOrGate;
+            }
+
+            // Phase 3: incomplete parse tree — leaf still navigates correctly
             return leaf;
         });
     }
@@ -243,14 +232,10 @@ public class IniGateOrParamGoToDeclarationHandler implements GotoDeclarationHand
         return result;
     }
 
-    private static void collectNedFilesRecursive(VirtualFile dir,
-                                                 List<VirtualFile> result) {
+    private static void collectNedFilesRecursive(VirtualFile dir, List<VirtualFile> result) {
         for (VirtualFile child : dir.getChildren()) {
-            if (child.isDirectory()) {
-                collectNedFilesRecursive(child, result);
-            } else if ("ned".equals(child.getExtension())) {
-                result.add(child);
-            }
+            if (child.isDirectory()) collectNedFilesRecursive(child, result);
+            else if ("ned".equals(child.getExtension())) result.add(child);
         }
     }
 
