@@ -50,6 +50,9 @@
         <gotoDeclarationHandler
                 implementation="com.omnetpp.omnetpp_plugin.ini.references.IniNetworkGoToDeclarationHandler"/>
 
+        <gotoDeclarationHandler
+                implementation="com.omnetpp.omnetpp_plugin.ini.references.IniGateOrParamGoToDeclarationHandler"/>
+
         <codeInsight.lineMarkerProvider
                 language="OMNET_INI"
                 implementationClass="com.omnetpp.omnetpp_plugin.ini.runner.IniConfigLineMarkerProvider"/>
