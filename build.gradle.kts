@@ -23,6 +23,14 @@ sourceSets {
             srcDirs("src/main/resources")
         }
     }
+    test {                              // ← ADD THIS
+        java {
+            srcDirs("src/test/java")
+        }
+        resources {
+            srcDirs("src/test/testData")
+        }
+    }
 }
 
 
@@ -37,6 +45,8 @@ dependencies {
       // Add necessary plugin dependencies for compilation here, example:
       // bundledPlugin("com.intellij.java")
     }
+    testImplementation("junit:junit:4.13.2")
+    testRuntimeOnly("junit:junit:4.13.2")
 }
 
 intellijPlatform {
@@ -68,6 +78,9 @@ tasks {
     //}
     //named("compileTestKotlin") {
         //enabled = false
+    }
+    test {                             // ← ADD THIS
+        systemProperty("idea.home.path", intellijPlatform.sandboxContainer.get().toString())
     }
 
 }
