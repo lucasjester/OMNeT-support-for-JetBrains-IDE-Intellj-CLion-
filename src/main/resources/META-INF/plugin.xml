@@ -10,7 +10,8 @@
 
         <!-- ── NED ──────────────────────────────────────────────────────── -->
         <fileType
-                name="NED"
+                name="NED File"
+                language="NED"
                 implementationClass="com.omnetpp.omnetpp_plugin.ned.NedFileType"
                 extensions="ned"/>
 
@@ -27,6 +28,22 @@
         <psi.referenceContributor
                 language="NED"
                 implementation="com.omnetpp.omnetpp_plugin.ned.references.NedReferenceContributor"/>
+
+        <findUsagesHandlerFactory
+                implementation="com.omnetpp.omnetpp_plugin.ned.NedFindUsagesHandlerFactory"/>
+
+        <targetElementEvaluator
+                language="NED"
+                implementationClass="com.omnetpp.omnetpp_plugin.ned.NedTargetElementEvaluator"/>
+
+        <lang.commenter language="NED"
+                        implementationClass="com.omnetpp.omnetpp_plugin.ned.NedCommenter"/>
+
+        <lang.documentationProvider language="NED"
+                                    implementationClass="com.omnetpp.omnetpp_plugin.ned.NedDocumentationProvider"/>
+
+        <annotator language="NED"
+                   implementationClass="com.omnetpp.omnetpp_plugin.ned.NedAnnotator"/>
 
         <!-- ── INI ──────────────────────────────────────────────────────── -->
         <fileType name="OMNeT++ INI"

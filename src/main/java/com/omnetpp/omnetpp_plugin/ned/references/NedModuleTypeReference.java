@@ -8,6 +8,9 @@ import com.intellij.psi.PsiReferenceBase;
 import com.omnetpp.omnetpp_plugin.ned.psi.NedFile;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import com.intellij.lang.ASTNode;
+import com.omnetpp.omnetpp_plugin.ned.psi.NedTypes;
+import com.omnetpp.omnetpp_plugin.ned.psi.impl.NedElementFactory;
 
 public class NedModuleTypeReference extends PsiReferenceBase<PsiElement> {
 
@@ -32,5 +35,18 @@ public class NedModuleTypeReference extends PsiReferenceBase<PsiElement> {
         return NedDeclarationSearch
                 .allModuleTypeNames(myElement.getProject())
                 .toArray();
+    }
+    @Override
+    public PsiElement handleElementRename(@NotNull String newElementName) {
+        ASTNode node = myElement.getNode();
+        ASTNode nameNode = node.findChildByType(NedTypes.NAME);
+        if (nameNode != null) {
+            PsiElement newId = NedElementFactory.createNameIdentifier(
+                    myElement.getProject(), newElementName);
+            if (newId != null) {
+                node.replaceChild(nameNode, newId.getNode());
+            }
+        }
+        return myElement;
     }
 }
