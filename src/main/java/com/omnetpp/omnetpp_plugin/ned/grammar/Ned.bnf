@@ -200,12 +200,13 @@ opt_inline_properties ::= inline_properties?
 
 inline_properties ::= property_namevalue+
 
-parampattern ::= pattern
+parampattern ::= pattern_elem DOT pattern_tail
 
-pattern ::= pattern2 DOT pattern_elem
-          | pattern2 DOT TYPENAME
+private pattern_tail ::= TYPENAME
+                        | pattern_elem DOT pattern_tail
+                        | pattern_elem
 
-pattern2 ::= pattern_elem (DOT pattern_elem)*
+
 
 //pattern_elem ::= pattern_name
                //| pattern_name LBRACK pattern_index RBRACK

@@ -16,6 +16,5 @@ network TestNetwork {
         bad2: <error descr="Unresolved module type 'MySikn'">MySikn</error>;
      connections:
         src.out --> snk.in;
-        typo1.out --> typo2.in;
         <error descr="Unknown submodule 'typo1'">typo1</error>.out --> <error descr="Unknown submodule 'typo2'">typo2</error>.in;
 }
