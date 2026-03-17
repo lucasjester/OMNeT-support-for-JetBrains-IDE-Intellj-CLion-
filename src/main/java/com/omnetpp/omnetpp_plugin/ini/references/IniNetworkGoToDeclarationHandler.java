@@ -4,35 +4,26 @@ import com.intellij.codeInsight.navigation.actions.GotoDeclarationHandler;
 import com.intellij.lang.ASTNode;
 import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.project.Project;
-import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.*;
-import com.intellij.psi.search.FileTypeIndex;
-import com.intellij.psi.search.GlobalSearchScope;
 import com.intellij.psi.util.PsiTreeUtil;
 import com.omnetpp.omnetpp_plugin.ini.psi.IniInivalue;
 import com.omnetpp.omnetpp_plugin.ini.psi.IniKeyValue;
 import com.omnetpp.omnetpp_plugin.ini.psi.IniTypes;
-import com.omnetpp.omnetpp_plugin.ned.NedFileType;
-import com.omnetpp.omnetpp_plugin.ned.psi.NedFile;
-import com.omnetpp.omnetpp_plugin.ned.psi.NedNetworkheader;
+import com.omnetpp.omnetpp_plugin.ned.references.NedDeclarationSearch;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.Collection;
 
 /**
  * Ctrl+Click handler: navigates from  network = SomeName  in a .ini file
  * to the matching  network SomeName { }  declaration in a .ned file.
  *
- * We use GotoDeclarationHandler instead of PsiReferenceContributor because
- * Grammar-Kit generates IniInivalueImpl extending ASTWrapperPsiElement, whose
- * getReferences() returns an empty array without ever consulting
- * PsiReferenceService — so contributors are never invoked.
- * GotoDeclarationHandler is called directly on the leaf at the caret,
- * bypassing getReferences() entirely.
+ * Delegates the actual search to {@link NedDeclarationSearch#findModuleType},
+ * which uses a regex-based text scan + offset resolution instead of parsing
+ * the PSI tree of every .ned file.  This keeps resolution fast even in large
+ * projects such as the full INET framework (thousands of .ned files).
  *
  * Register in plugin.xml:
  *   <gotoDeclarationHandler
- *       implementation="com.omnetpp.omnetpp_plugin.ini.references.IniNetworkGotoDeclarationHandler"/>
+ *       implementation="com.omnetpp.omnetpp_plugin.ini.references.IniNetworkGoToDeclarationHandler"/>
  */
 public class IniNetworkGoToDeclarationHandler implements GotoDeclarationHandler {
 
@@ -61,34 +52,19 @@ public class IniNetworkGoToDeclarationHandler implements GotoDeclarationHandler 
         String keyText = keyNode.getText();
         if (!keyText.equals("network") && !keyText.endsWith(".network")) return null;
 
-        // 5. Resolve the network name to a NedNetworkheader
+        // 5. Resolve the network name via NedDeclarationSearch
         String networkName = sourceElement.getText();
-        // Strip optional package prefix: "some.pkg.MyNet" → "MyNet"
-        String simpleName = networkName.contains(".")
-                ? networkName.substring(networkName.lastIndexOf('.') + 1)
-                : networkName;
-        if (simpleName.isBlank()) return null;
+        if (networkName == null || networkName.isBlank()) return null;
 
         Project project = sourceElement.getProject();
+        PsiFile currentFile = sourceElement.getContainingFile();
 
-        Collection<VirtualFile> nedFiles = FileTypeIndex.getFiles(
-                NedFileType.INSTANCE,
-                GlobalSearchScope.allScope(project)
-        );
+        // findModuleType handles: current file PSI check → indexed text scan
+        // → NED-path text scan.  It works with all declaration types
+        // (simple, module, network, …), which is exactly what we need here.
+        PsiElement target = NedDeclarationSearch.findModuleType(
+                project, currentFile, networkName);
 
-        for (VirtualFile vf : nedFiles) {
-            PsiFile psiFile = PsiManager.getInstance(project).findFile(vf);
-            if (!(psiFile instanceof NedFile nedFile)) continue;
-
-            for (NedNetworkheader header :
-                    PsiTreeUtil.findChildrenOfType(nedFile, NedNetworkheader.class)) {
-                PsiElement id = header.getNameIdentifier();
-                if (id != null && simpleName.equals(id.getText())) {
-                    return new PsiElement[]{header};
-                }
-            }
-        }
-
-        return null;
+        return target != null ? new PsiElement[]{target} : null;
     }
 }

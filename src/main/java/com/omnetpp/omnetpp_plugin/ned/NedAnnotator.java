@@ -26,11 +26,8 @@ import java.util.regex.Pattern;
  * 1. Highlights unresolved module/channel type references as errors.
  * 2. Highlights unknown submodule instance names in connections as errors,
  *    walking the full "extends" chain via text-scan to find inherited submodules.
- *
- * Register in plugin.xml:
- *   <annotator language="NED"
- *              implementationClass="com.omnetpp.omnetpp_plugin.ned.NedAnnotator"/>
- */
+ **/
+
 public class NedAnnotator implements Annotator {
 
     private static final int MAX_EXTENDS_DEPTH = 10;
