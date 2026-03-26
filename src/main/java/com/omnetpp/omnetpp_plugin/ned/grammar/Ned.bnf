@@ -70,8 +70,20 @@ fileproperty ::= property_namevalue SEMI
 
 property_namevalue ::= property_name (LPAREN opt_property_keys RPAREN)?
 
+//inet
 
-property_name ::= AT NAME (LBRACK NAME RBRACK)?
+property_name ::= AT NAME (LBRACK prop_index RBRACK)?
+
+private prop_index ::= prop_index_word (DOT prop_index_word)*
+
+private prop_index_word ::= NAME
+    | SUBMODULEDEF | GATESDEF | CHANNEL | PARAMETERS | TYPES
+    | KW_CONNECTIONS | SIMPLE | MODULE | NETWORK | MODULEINTERFACE
+    | CHANNELINTERFACE | ALLOWUNCONNECTED | FOR | IF | EXTENDS | LIKE
+    | DEFAULT | ASK | TYPENAME | EXISTS | SIZEOF | INDEX | THIS | PARENT
+    | VOLATILE | INPUT | OUTPUT | INOUT
+    | DOUBLE | INT | STRING | BOOL | OBJECTDEF | XML | XMLDOC
+    | TRUE | FALSE | NAN | INF | NULL | NULLPTR | UNDEFINED
 
 
 opt_property_keys ::= property_keys?
@@ -92,7 +104,8 @@ property_value ::= (expression | property_literal)?
 //property_literal ::= (CHAR | STRINGCONSTANT)+
 property_literal ::= (CHAR | STRINGCONSTANT | NAME | COLONCOLON
                      | DOUBLE | INT | STRING | BOOL | OBJECTDEF | XML
-                     | XMLDOC | TRUE | FALSE | NAN | INF)+
+                     | XMLDOC | TRUE | FALSE | NAN | INF
+                     | HT | INTCONSTANT | REALCONSTANT)+
 
 
 channeldefinition ::= channelheader LBRACE opt_paramblock RBRACE
@@ -285,9 +298,9 @@ submoduleheader ::= submodulename COLON dottedname opt_condition
 
 submodulename ::= NAME (LBRACK expression RBRACK)?
 
-likeexpr ::= "<>"
-           | "<" DEFAULT LPAREN expression RPAREN ">"
-           | "<" expression ">"
+likeexpr ::= LT GT
+           | LT DEFAULT LPAREN expression RPAREN GT
+           | LT expression GT
 
 opt_condition ::= condition?
 
@@ -402,8 +415,7 @@ object ::= LBRACE opt_keyvaluelist RBRACE
 opt_exprlist ::= exprlist?
 
 
-exprlist ::= exprlist COMMA expr
-           | expr
+exprlist ::= expr (COMMA expr)*
 
 opt_keyvaluelist ::= (keyvaluelist (COMMA)?)?
 

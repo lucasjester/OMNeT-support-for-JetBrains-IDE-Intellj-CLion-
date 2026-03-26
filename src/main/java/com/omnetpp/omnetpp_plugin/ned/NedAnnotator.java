@@ -4,6 +4,7 @@ import com.intellij.lang.ASTNode;
 import com.intellij.lang.annotation.AnnotationHolder;
 import com.intellij.lang.annotation.Annotator;
 import com.intellij.lang.annotation.HighlightSeverity;
+import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.PsiElement;
@@ -25,10 +26,20 @@ import java.util.regex.Pattern;
  *
  * 1. Highlights unresolved module/channel type references as errors.
  * 2. Highlights unknown submodule instance names in connections as errors,
- *    walking the full "extends" chain via text-scan to find inherited submodules.
- **/
-
+ *    walking the full "extends" chain to find inherited submodules.
+ *
+ * For parent definitions in the extends chain, we attempt PSI tree traversal
+ * first (which is more precise and type-safe). If the PSI tree is incomplete
+ * (e.g. for complex INET modules where our parser cannot fully handle the
+ * syntax), we fall back to regex-based text scanning.
+ *
+ * Register in plugin.xml:
+ *   <annotator language="NED"
+ *              implementationClass="com.omnetpp.omnetpp_plugin.ned.NedAnnotator"/>
+ */
 public class NedAnnotator implements Annotator {
+
+    private static final Logger LOG = Logger.getInstance(NedAnnotator.class);
 
     private static final int MAX_EXTENDS_DEPTH = 10;
 
@@ -166,7 +177,13 @@ public class NedAnnotator implements Annotator {
 
     /**
      * Collects submodule names from the current definition (via PSI)
-     * and from ALL parent definitions in the extends chain (via text-scan).
+     * and from ALL parent definitions in the extends chain.
+     *
+     * <p>For each parent in the extends chain, PSI tree traversal is attempted
+     * first. If the PSI tree appears incomplete (no submodule names found and
+     * no extends clause found via PSI), we fall back to regex-based text
+     * scanning. This handles cases where our NED parser cannot fully parse
+     * complex modules (e.g. from the INET framework).</p>
      */
     @NotNull
     private static Set<String> collectAllSubmoduleNames(@NotNull PsiElement definition,
@@ -177,41 +194,126 @@ public class NedAnnotator implements Annotator {
         // ── Step 1: Local submodules via PSI (current file, works reliably) ──
         collectLocalSubmoduleNamesPsi(definition, names);
 
-        // ── Step 2: Walk extends chain via text-scan ─────────────────────────
+        // ── Step 2: Walk extends chain — PSI first, regex fallback ───────────
         String extendsName = getExtendsTypeNamePsi(definition);
         int depth = 0;
 
         while (extendsName != null && depth < MAX_EXTENDS_DEPTH) {
-            // Resolve the parent type
+            // Resolve the parent type declaration
             PsiElement parentHeader = NedDeclarationSearch.findModuleType(
                     project, currentFile, extendsName);
             if (parentHeader == null) break;
 
-            // Get the file containing the parent definition
             PsiFile parentFile = parentHeader.getContainingFile();
             if (parentFile == null) break;
             VirtualFile vf = parentFile.getVirtualFile();
             if (vf == null) break;
 
-            // Read file content for text-scan
-            String content;
-            try {
-                content = new String(vf.contentsToByteArray(), StandardCharsets.UTF_8);
-            } catch (Exception e) {
-                break;
+            String simpleName = simpleName(extendsName);
+
+            // ── 2a. Attempt PSI traversal on the parent definition ───────────
+            PsiElement parentDefinition = findDefinitionFromHeader(parentHeader);
+
+            boolean psiFoundSubmodules = false;
+            String psiExtendsName = null;
+
+            if (parentDefinition != null) {
+                int sizeBefore = names.size();
+                collectLocalSubmoduleNamesPsi(parentDefinition, names);
+                psiFoundSubmodules = names.size() > sizeBefore;
+
+                psiExtendsName = getExtendsTypeNamePsi(parentDefinition);
+            } else {
+                LOG.info("[NedAnnotator] extends '" + extendsName + "' in "
+                        + vf.getName()
+                        + ": PSI definition not found (header parent is not a "
+                        + "recognized definition type) — will use regex fallback");
             }
 
-            // Find the definition block for this type and extract submodule names
-            String simpleName = simpleName(extendsName);
-            extractSubmoduleNamesFromText(content, simpleName, names);
+            // ── 2b. If PSI found submodules, trust PSI for this level ────────
+            //        Still check extends via regex if PSI didn't find one,
+            //        since the extends clause might be in a broken part of
+            //        the parse tree while submodules parsed fine.
+            if (psiFoundSubmodules) {
+                if (psiExtendsName != null) {
+                    // PSI handled everything for this level
+                    LOG.info("[NedAnnotator] extends '" + extendsName + "' in "
+                            + vf.getName()
+                            + ": fully resolved via PSI (submodules + extends)");
+                    extendsName = psiExtendsName;
+                } else {
+                    // PSI found submodules but not extends — try regex for extends only
+                    LOG.info("[NedAnnotator] extends '" + extendsName + "' in "
+                            + vf.getName()
+                            + ": submodules via PSI, extends via regex fallback");
+                    extendsName = findExtendsInTextLazy(vf, simpleName);
+                }
+                depth++;
+                continue;
+            }
 
-            // Find the next extends in the chain
-            extendsName = findExtendsInText(content, simpleName);
+            // ── 2c. PSI found no submodules — fall back to regex scan ────────
+            //        This handles broken parse trees (e.g. complex INET modules)
+            //        as well as modules that genuinely have no submodules
+            //        (in which case regex also finds nothing — harmless).
+            LOG.info("[NedAnnotator] extends '" + extendsName + "' in "
+                    + vf.getName()
+                    + ": no submodules found via PSI — falling back to regex");
+
+            String content = readFileContent(vf);
+            if (content == null) break;
+
+            int sizeBefore = names.size();
+            extractSubmoduleNamesFromText(content, simpleName, names);
+            int regexFound = names.size() - sizeBefore;
+
+            LOG.info("[NedAnnotator] regex fallback for '" + extendsName + "' in "
+                    + vf.getName()
+                    + ": found " + regexFound + " submodule(s)");
+
+            // For extends: use PSI result if available, otherwise regex
+            extendsName = (psiExtendsName != null)
+                    ? psiExtendsName
+                    : findExtendsInText(content, simpleName);
+
             depth++;
         }
 
         return names;
     }
+
+    // ═════════════════════════════════════════════════════════════════════════
+    // File I/O helper
+    // ═════════════════════════════════════════════════════════════════════════
+
+    /**
+     * Reads the content of a VirtualFile as a UTF-8 string.
+     * Returns null if the file cannot be read.
+     */
+    @Nullable
+    private static String readFileContent(@NotNull VirtualFile vf) {
+        try {
+            return new String(vf.contentsToByteArray(), StandardCharsets.UTF_8);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    /**
+     * Convenience method: reads file content and finds extends via regex.
+     * Returns null if the file cannot be read or no extends is found.
+     */
+    @Nullable
+    private static String findExtendsInTextLazy(@NotNull VirtualFile vf,
+                                                @NotNull String typeName) {
+        String content = readFileContent(vf);
+        if (content == null) return null;
+        return findExtendsInText(content, typeName);
+    }
+
+    // ═════════════════════════════════════════════════════════════════════════
+    // Regex-based text scanning (fallback for incomplete PSI trees)
+    // ═════════════════════════════════════════════════════════════════════════
 
     /**
      * Extracts submodule names from the text of a definition block.
@@ -314,9 +416,13 @@ public class NedAnnotator implements Annotator {
     }
 
     // ═════════════════════════════════════════════════════════════════════════
-    // PSI helpers (used for current file only)
+    // PSI helpers
     // ═════════════════════════════════════════════════════════════════════════
 
+    /**
+     * Finds the enclosing module/network definition for an element
+     * in the current file (used for connections context).
+     */
     @Nullable
     private static PsiElement findEnclosingDefinition(@NotNull PsiElement element) {
         PsiElement candidate = element.getParent();
@@ -330,6 +436,39 @@ public class NedAnnotator implements Annotator {
         return null;
     }
 
+    /**
+     * Navigates from a header element (e.g. NedCompoundmoduleheader,
+     * NedNetworkheader) up to its enclosing definition element.
+     *
+     * <p>In the PSI tree, the structure is:
+     * <pre>
+     *   NedCompoundmoduledefinition      ← definition (what we want)
+     *     ├─ NedCompoundmoduleheader     ← header (what we have)
+     *     ├─ LBRACE
+     *     ├─ submodules / connections / ...
+     *     └─ RBRACE
+     * </pre>
+     *
+     * <p>If the header's parent is not a recognized definition type, this
+     * likely means the PSI tree is incomplete (e.g. from a text-scan
+     * fallback in NedDeclarationSearch that returned a leaf element).
+     * In that case, we return null to signal that PSI traversal should
+     * not be attempted for this definition.</p>
+     */
+    @Nullable
+    private static PsiElement findDefinitionFromHeader(@NotNull PsiElement header) {
+        PsiElement parent = header.getParent();
+        if (parent instanceof NedNetworkdefinition
+                || parent instanceof NedCompoundmoduledefinition) {
+            return parent;
+        }
+        return null;
+    }
+
+    /**
+     * Collects submodule names from a definition element via PSI traversal.
+     * Searches for all NedSubmodulename nodes within the definition.
+     */
     private static void collectLocalSubmoduleNamesPsi(@NotNull PsiElement definition,
                                                       @NotNull Set<String> names) {
         for (NedSubmodulename subName :
@@ -342,7 +481,9 @@ public class NedAnnotator implements Annotator {
     }
 
     /**
-     * Gets the extends type name from a definition using PSI (current file).
+     * Gets the extends type name from a definition using PSI tree navigation.
+     * Navigates: definition → NedOptInheritance → NedInheritance →
+     *            NedExtendsname → NedDottedname
      */
     @Nullable
     private static String getExtendsTypeNamePsi(@NotNull PsiElement definition) {
