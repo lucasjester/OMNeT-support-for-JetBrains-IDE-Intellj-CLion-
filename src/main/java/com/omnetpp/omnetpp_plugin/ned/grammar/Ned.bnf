@@ -105,7 +105,13 @@ property_value ::= (expression | property_literal)?
 property_literal ::= (CHAR | STRINGCONSTANT | NAME | COLONCOLON
                      | DOUBLE | INT | STRING | BOOL | OBJECTDEF | XML
                      | XMLDOC | TRUE | FALSE | NAN | INF
-                     | HT | INTCONSTANT | REALCONSTANT)+
+                     | HT | INTCONSTANT | REALCONSTANT
+                     | MODULE | NETWORK | SIMPLE | CHANNEL | CHANNELINTERFACE
+                     | MODULEINTERFACE | PARAMETERS | SUBMODULEDEF | GATESDEF
+                     | TYPES | KW_CONNECTIONS | FOR | IF | EXTENDS | LIKE
+                     | DEFAULT | ASK | TYPENAME | EXISTS | SIZEOF | INDEX
+                     | THIS | PARENT | VOLATILE | INPUT | OUTPUT | INOUT
+                     | ALLOWUNCONNECTED | NULL | NULLPTR | UNDEFINED )+
 
 
 channeldefinition ::= channelheader LBRACE opt_paramblock RBRACE
@@ -453,13 +459,14 @@ funcname ::= NAME
            | XML
            | XMLDOC
 
-qname_elem ::= NAME LBRACK expr RBRACK
-             | NAME
+qname_elem ::= NAME (LBRACK expr RBRACK)?
              | THIS
              | PARENT
+             | INDEX
+             | TYPENAME
 
 qname ::= qname_elem (DOT qname_elem | COLONCOLON qname_elem)*
-operator ::= INDEX
+operator ::= INDEX (LPAREN RPAREN)?
            | TYPENAME
            | qname DOT INDEX
            | qname DOT TYPENAME

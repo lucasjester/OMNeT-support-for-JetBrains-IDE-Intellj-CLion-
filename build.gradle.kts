@@ -79,8 +79,9 @@ tasks {
     //named("compileTestKotlin") {
         //enabled = false
     }
-    test {                             // ← ADD THIS
+    test {
         systemProperty("idea.home.path", intellijPlatform.sandboxContainer.get().toString())
+        systemProperty("inet.ned.path", "${System.getProperty("user.home")}/Downloads/workspace/inet")
     }
 
 }

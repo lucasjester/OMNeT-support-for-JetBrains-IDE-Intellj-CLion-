@@ -15,6 +15,8 @@ import com.omnetpp.omnetpp_plugin.ned.NedFileType;
 import com.omnetpp.omnetpp_plugin.ned.psi.*;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import com.intellij.testFramework.LightVirtualFile;
+import java.io.InputStream;
 
 import java.nio.charset.StandardCharsets;
 import java.util.*;
@@ -37,6 +39,9 @@ public final class NedDeclarationSearch {
     private static final Map<String, IndexEntry> nameIndex    = new ConcurrentHashMap<>();
     private static volatile boolean              indexReady   = false;
     private static volatile String               indexedPaths = null;
+    /** Cached content of the built-in NED stubs (loaded once from classpath). */
+    private static volatile String builtinNedContent = null;
+    private static volatile VirtualFile builtinVirtualFile = null;
 
     // ═════════════════════════════════════════════════════════════════════════
     // Public API
@@ -149,6 +154,13 @@ public final class NedDeclarationSearch {
                 PsiElement found = scanAndResolve(project, dirFiles, excludeFile, simpleName, packagePrefix);
                 if (found != null) return found;
             }
+        }
+        // ── 4. Built-in OMNeT++ types (bundled stub file) ────────────────────
+        VirtualFile builtinFile = getBuiltinStubFile();
+        if (builtinFile != null) {
+            PsiElement found = scanAndResolve(project, List.of(builtinFile),
+                    excludeFile, simpleName, packagePrefix);
+            if (found != null) return found;
         }
         return null;
     }
@@ -391,4 +403,23 @@ public final class NedDeclarationSearch {
         }
         return out;
     }
+    /**
+     * Returns a VirtualFile backed by the built-in NED stub declarations
+     * (bundled as a plugin resource). The file is loaded once and cached.
+     */
+    @Nullable
+    private static VirtualFile getBuiltinStubFile() {
+        if (builtinVirtualFile != null) return builtinVirtualFile;
+
+        try (InputStream is = NedDeclarationSearch.class
+                .getResourceAsStream("/builtin/ned-builtins.ned")) {
+            if (is == null) return null;
+            builtinNedContent = new String(is.readAllBytes(), StandardCharsets.UTF_8);
+            builtinVirtualFile = new LightVirtualFile("ned-builtins.ned", builtinNedContent);
+            return builtinVirtualFile;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
 }
