@@ -14,21 +14,24 @@ import java.util.Map;
 public class IniColorSettingsPage implements ColorSettingsPage {
 
     private static final AttributesDescriptor[] DESCRIPTORS = {
-            new AttributesDescriptor("Section header",          IniSyntaxHighlighter.SECTION),
-            new AttributesDescriptor("Key",                     IniSyntaxHighlighter.KEY),
-            new AttributesDescriptor("Assignment (= or :)",     IniSyntaxHighlighter.EQ),
-            new AttributesDescriptor("String",                  IniSyntaxHighlighter.STRING),
-            new AttributesDescriptor("Number / quantity",       IniSyntaxHighlighter.NUMBER),
-            new AttributesDescriptor("Boolean",                 IniSyntaxHighlighter.BOOLEAN),
-            new AttributesDescriptor("Value (plain word)",      IniSyntaxHighlighter.VALUE),
-            new AttributesDescriptor("Function call",           IniSyntaxHighlighter.FUNC_CALL),
-            new AttributesDescriptor("Arithmetic operator",     IniSyntaxHighlighter.ARITH_OP),
-            new AttributesDescriptor("Mapping key (in object)", IniSyntaxHighlighter.MAP_KEY),
-            new AttributesDescriptor("Bracket [ ]",             IniSyntaxHighlighter.BRACKET),
-            new AttributesDescriptor("Brace { }",               IniSyntaxHighlighter.BRACE),
-            new AttributesDescriptor("Comma",                   IniSyntaxHighlighter.COMMA),
-            new AttributesDescriptor("Comment",                 IniSyntaxHighlighter.COMMENT),
-            new AttributesDescriptor("Bad character",           IniSyntaxHighlighter.BAD_CHAR),
+            new AttributesDescriptor("Section header",              IniSyntaxHighlighter.SECTION),
+            new AttributesDescriptor("Key",                         IniSyntaxHighlighter.KEY),
+            new AttributesDescriptor("Assignment (= or :)",         IniSyntaxHighlighter.EQ),
+            new AttributesDescriptor("String",                      IniSyntaxHighlighter.STRING),
+            new AttributesDescriptor("Number / quantity",           IniSyntaxHighlighter.NUMBER),
+            new AttributesDescriptor("Boolean",                     IniSyntaxHighlighter.BOOLEAN),
+            new AttributesDescriptor("Value (plain word)",          IniSyntaxHighlighter.VALUE),
+            new AttributesDescriptor("Function call",               IniSyntaxHighlighter.FUNC_CALL),
+            new AttributesDescriptor("Operator",                    IniSyntaxHighlighter.ARITH_OP),
+            new AttributesDescriptor("Mapping key (in object)",     IniSyntaxHighlighter.MAP_KEY),
+            new AttributesDescriptor("Bracket [ ]",                 IniSyntaxHighlighter.BRACKET),
+            new AttributesDescriptor("Brace { }",                   IniSyntaxHighlighter.BRACE),
+            new AttributesDescriptor("Parentheses ( )",             IniSyntaxHighlighter.PAREN),
+            new AttributesDescriptor("Comma",                       IniSyntaxHighlighter.COMMA),
+            new AttributesDescriptor("Comment",                     IniSyntaxHighlighter.COMMENT),
+            new AttributesDescriptor("Include directive",           IniSyntaxHighlighter.INCLUDE),
+            new AttributesDescriptor("Iteration variable ${...}",   IniSyntaxHighlighter.ITER_VAR),
+            new AttributesDescriptor("Bad character",               IniSyntaxHighlighter.BAD_CHAR),
     };
 
     @Nullable
@@ -48,41 +51,49 @@ public class IniColorSettingsPage implements ColorSettingsPage {
                 + "network = TimeAwareShapingShowcaseNetwork\n"
                 + "sim-time-limit = 1s\n"
                 + "\n"
-                + "# Ethernet speed\n"
-                + "*.*.eth[*].bitrate = 100Mbps\n"
+                + "// Include shared configuration\n"
+                + "include ../shared.ini\n"
                 + "\n"
-                + "# Client applications\n"
-                + "*.client*.numApps = 1\n"
-                + "*.client*.app[*].typename = \"UdpSourceApp\"\n"
-                + "*.client1.app[0].source.packetLength = 1500B - 58B\n"
-                + "*.client1.app[0].source.productionInterval = exponential(200us)\n"
-                + "*.client2.app[0].source.productionInterval = 1ms\n"
+                + "[Config ParameterStudy]\n"
+                + "description = \"parameter sweep\"\n"
                 + "\n"
-                + "# Stream encoding (array of objects)\n"
-                + "*.client*.bridging.streamCoder.encoder.mapping = [{stream: \"best-effort\", pcp: 0},\n"
-                + "                                                  {stream: \"high-priority\", pcp: 4}]\n"
+                + "# Ethernet speed with arithmetic\n"
+                + "*.switch.eth[*].bitrate = (100 * 1024) * 1bps\n"
                 + "\n"
-                + "# Gate durations (array of scalars)\n"
-                + "*.switch.eth[*].macLayer.queue.transmissionGate[0].durations = [20us, 980us]\n"
+                + "# Iteration variable for parameter sweep\n"
+                + "*.numHosts = ${N=1, 2, 5, 10..50 step 10}\n"
+                + "**.sendInterval = exponential(${mean=0.2, 0.4, 0.6}s)\n"
                 + "\n"
-                + "[Config HighLoad]\n"
-                + "description = \"High traffic configuration\"\n"
-                + "sim-time-limit = 60s\n";
+                + "# TSN gate schedule with array and object values\n"
+                + "*.switch.eth[0].macLayer.queue.gate[0].durations = \\\n"
+                + "    [20us, 980us]\n"
+                + "\n"
+                + "# Conditional / ternary expression\n"
+                + "**.typename = ${N} > 5 ? \"UdpApp\" : \"TcpApp\"\n"
+                + "\n"
+                + "# Function calls and boolean\n"
+                + "**.hasStatus = true\n"
+                + "**.jitter = uniform(0.1ms, 0.5ms) + normal(0ms, 0.01ms)\n";
     }
 
     @Nullable
     @Override
-    public Map<String, TextAttributesKey> getAdditionalHighlightingTagToDescriptorMap() { return null; }
+    public Map<String, TextAttributesKey> getAdditionalHighlightingTagToDescriptorMap() {
+        return null;
+    }
 
-    @NotNull
     @Override
-    public AttributesDescriptor[] getAttributeDescriptors() { return DESCRIPTORS; }
+    public @NotNull AttributesDescriptor[] getAttributeDescriptors() {
+        return DESCRIPTORS;
+    }
 
-    @NotNull
     @Override
-    public ColorDescriptor[] getColorDescriptors() { return ColorDescriptor.EMPTY_ARRAY; }
+    public @NotNull ColorDescriptor[] getColorDescriptors() {
+        return ColorDescriptor.EMPTY_ARRAY;
+    }
 
-    @NotNull
     @Override
-    public String getDisplayName() { return "OMNeT++ INI"; }
+    public @NotNull String getDisplayName() {
+        return "OMNeT++ INI";
+    }
 }

@@ -114,17 +114,18 @@ public final class NedDeclarationSearch {
     // ═════════════════════════════════════════════════════════════════════════
     // Steps 2 + 3 — text scan → offset-based resolution
     //
-    // We do NOT rely on PsiTreeUtil traversal for external files because
-    // our NED parser may not fully handle complex INET compound modules
-    // (TsnDevice, TsnSwitch, …). When the parse tree is incomplete,
-    // PsiTreeUtil finds nothing.
+    // For external files we use regex-based text scanning rather than PSI
+    // tree traversal. The grammar now covers all tested INET NED files, but
+    // INET has no formal grammar spec, so future files may introduce
+    // constructs the parser does not handle. The text-scan approach is
+    // retained as a defensive fallback that works regardless of parse quality.
     //
-    // Instead:
+    // Strategy:
     //   a) Find the file + char offset via regex (no PSI needed)
     //   b) Open the file with PSI
     //   c) Call pf.findElementAt(offset) to get the NAME leaf directly
     //   d) Try walking UP to find the proper header element
-    //   e) If walk-up fails (broken parse tree), return the leaf itself —
+    //   e) If walk-up fails, return the leaf itself —
     //      IntelliJ will still navigate to the exact position in the file.
     // ═════════════════════════════════════════════════════════════════════════
 

@@ -23,10 +23,36 @@ import java.util.*;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
+/**
+ * Builds and launches the OMNeT++ simulation process.
+ *
+ * <h3>NED path and package handling</h3>
+ * <p>OMNeT++ resolves NED package declarations relative to the {@code -n}
+ * root a file is loaded from.  In the INET framework, source files under
+ * {@code inet/src} declare packages like {@code inet.common} and are loaded
+ * from root {@code inet/src}.  However, showcase/example NED files declare
+ * packages like {@code inet.showcases.tsn.trafficshaping.timeawareshaper}
+ * which would require the <em>parent of the INET root</em> as NED root —
+ * but that root would conflict with the {@code inet/src} root for library
+ * files.</p>
+ *
+ * <p>The standard OMNeT++ command-line practice is to run showcases from
+ * their own directory and pass that directory as a NED root, which requires
+ * that those NED files have <strong>no</strong> package declaration.
+ * Since INET's showcase NED files do contain package declarations, this
+ * class temporarily comments them out in the INI file's directory only
+ * (not across the entire project) and restores them after the simulation
+ * process terminates.</p>
+ */
 public class OmnetIniCommandLineState extends CommandLineState {
 
     private final OmnetIniRunConfiguration cfg;
+
+    /** Stores original file content for NED files whose packages were commented out. */
     private final Map<Path, String> originalContents = new HashMap<>();
+
+    private static final Pattern PACKAGE_LINE = Pattern.compile(
+            "^(\\s*package\\s+[\\w.]+\\s*;)", Pattern.MULTILINE);
 
     protected OmnetIniCommandLineState(@NotNull ExecutionEnvironment environment,
                                        @NotNull OmnetIniRunConfiguration cfg) {
@@ -70,25 +96,32 @@ public class OmnetIniCommandLineState extends CommandLineState {
         // ── 5. NED search paths (-n) ──────────────────────────────────────────
         LinkedHashSet<String> nedSet = new LinkedHashSet<>();
 
-        // a) current working dir
+        // a) current working dir (the directory containing the .ini file)
         nedSet.add(workDir);
 
-        // b) auto-detect: every direct subdirectory named "src" under the project root
+        // b) auto-detect: directories named "src" under the project root
         if (projectBasePath != null) {
             Path projRoot = Paths.get(projectBasePath);
             addSrcSubDirs(nedSet, projRoot, 3);
         }
 
-        // c) global NED paths (Settings → OMNeT++ Run → NED paths)
+        // c) global NED paths (Settings -> OMNeT++ Run -> NED paths)
         splitSemicolon(settings.getNedPaths()).forEach(nedSet::add);
 
         // d) per-config NED paths
         splitSemicolon(cfg.getNedPaths()).forEach(nedSet::add);
 
-        // Comment out package declarations in ALL ned dirs before passing to OMNeT++
-        for (String p : nedSet) {
-            commentOutPackageDeclarations(p);
-        }
+        // ── 5b. Comment out package declarations in the workDir ONLY ──────────
+        //
+        // Showcase/example NED files often declare packages (e.g.
+        // inet.showcases.tsn...) that are incompatible with loading from
+        // the showcase directory as a NED root.  We temporarily comment
+        // these out so OMNeT++ can load them without package mismatch.
+        //
+        // ONLY the INI file's own directory is affected — src/ and other
+        // NED paths are left untouched because their packages resolve
+        // correctly from their own roots.
+        commentOutPackageDeclarations(workDir);
 
         for (String p : nedSet) {
             cmd.addParameters("-n", p);
@@ -116,9 +149,11 @@ public class OmnetIniCommandLineState extends CommandLineState {
 
     // ── Package comment/restore helpers ──────────────────────────────────────
 
-    private static final Pattern PACKAGE_LINE = Pattern.compile(
-            "^(\\s*package\\s+[\\w.]+\\s*;)", Pattern.MULTILINE);
-
+    /**
+     * Comments out the {@code package} declaration in each {@code .ned} file
+     * found <strong>directly</strong> in the given directory (non-recursive).
+     * The original content is saved so it can be restored later.
+     */
     private void commentOutPackageDeclarations(String dir) {
         try (Stream<Path> files = Files.list(Paths.get(dir))) {
             files.filter(p -> p.toString().endsWith(".ned"))
@@ -138,6 +173,10 @@ public class OmnetIniCommandLineState extends CommandLineState {
         } catch (IOException ignored) {}
     }
 
+    /**
+     * Restores the original content of every NED file that was modified
+     * by {@link #commentOutPackageDeclarations}.
+     */
     private void restorePackageDeclarations() {
         for (Map.Entry<Path, String> entry : originalContents.entrySet()) {
             try {
@@ -153,19 +192,27 @@ public class OmnetIniCommandLineState extends CommandLineState {
 
     // ── NED auto-detection helper ─────────────────────────────────────────────
 
+    /**
+     * Walks the project root up to {@code maxDepth} levels and adds every
+     * directory named {@code "src"} to the result set.  Build-output and
+     * hidden directories are skipped.
+     *
+     * <p>Only {@code src/} directories are added because they are the
+     * conventional NED source roots in OMNeT++ projects.  The INI file's
+     * own directory is added separately as the working directory.</p>
+     */
     private static void addSrcSubDirs(LinkedHashSet<String> result, Path root, int maxDepth) {
         if (!Files.isDirectory(root)) return;
+
+        Set<String> skipDirs = Set.of("out", "build", ".git", ".gradle", ".idea");
+
         try (Stream<Path> walk = Files.walk(root, maxDepth)) {
             walk.filter(Files::isDirectory)
                     .filter(p -> {
-                        String name = p.getFileName() != null ? p.getFileName().toString() : "";
-                        if ("src".equals(name)) return true;
-                        try (Stream<Path> children = Files.list(p)) {
-                            return children.anyMatch(c ->
-                                    !Files.isDirectory(c) && c.toString().endsWith(".ned"));
-                        } catch (Exception e) {
-                            return false;
-                        }
+                        String name = p.getFileName() != null
+                                ? p.getFileName().toString() : "";
+                        if (skipDirs.contains(name)) return false;
+                        return "src".equals(name);
                     })
                     .map(Path::toString)
                     .forEach(result::add);
