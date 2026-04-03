@@ -1,6 +1,7 @@
-/* OMNeT++ INI lexer v2 — comprehensive INET framework coverage               */
+/* OMNeT++ INI lexer v5 — comprehensive INET framework coverage               */
 /* Handles: include, ${}, //, line continuation, parens, operators,            */
 /*          single-quoted strings, bare $var, ? in keys, space-separated units */
+/*          string map keys, multi-line strings, state-stack nesting           */
 
 package com.omnetpp.omnetpp_plugin.ini;
 
@@ -22,6 +23,15 @@ import static com.omnetpp.omnetpp_plugin.ini.psi.IniTypes.*;
 %xstate IN_ARRAY
 %xstate IN_OBJECT
 
+%{
+  // ── FIX 7: State stack for correct nesting of [ ] and { } ──────────
+  //    When entering an array or object, we push the current state.
+  //    When leaving, we pop back to wherever we came from.  This ensures
+  //    that a standalone object { } entered from AFTER_EQ returns to
+  //    AFTER_EQ, while an object inside an array returns to IN_ARRAY.
+  private final java.util.Stack<Integer> stateStack = new java.util.Stack<>();
+%}
+
 LINE_END        = \r\n | \r | \n
 WHITE_SPACE     = [ \t]+
 LINE_CONT       = \\ [ \t]* (\r\n | \r | \n)
@@ -33,10 +43,12 @@ INLINE_COMMENT  = [ \t]* ([;#] | "//") [^\r\n]*
 // ── Include directive ────────────────────────────────────────────────
 INCLUDE         = "include" [ \t]+ [^\r\n]+
 
-SECTION         = \[ [^\]\r\n]+ \]
+// ── FIX 8a: SECTION requires letter after [ to avoid matching arrays ──
+SECTION         = \[ [A-Za-z] [^\]\r\n]* \]
 
-// ── KEY: added ? for OMNeT++ per-object config patterns ──────────────
-KEY             = [A-Za-z0-9_\-\*\.\?]+ ( \[ [^\]\r\n]* \] [A-Za-z0-9_\-\*\.\?]* )*
+// ── FIX 6: Added : to KEY character class for signal:statistic syntax ─
+// ── FIX 5: Added { } segments for inline iteration ranges in keys ─────
+KEY             = [A-Za-z0-9_\-\*\.\?:\$]+ ( ( \[ [^\]\r\n]* \] | \{ [^}\r\n]* \} ) [A-Za-z0-9_\-\*\.\?:\$]* )*
 
 EQ              = [=:]
 
@@ -44,9 +56,12 @@ EQ              = [=:]
 NUMBER          = [0-9]+ (\.[0-9]+)? ([eE][\+\-]?[0-9]+)? [A-Za-z%]*
 NEG_NUMBER      = \-[0-9]+ (\.[0-9]+)? ([eE][\+\-]?[0-9]+)? [A-Za-z%]*
 
-// ── Strings: both double-quoted and single-quoted ────────────────────
-DSTRING         = \" ([^\"\\] | \\.)* \"
-SSTRING         = \' ([^\'\\] | \\.)* \'
+// ── FIX 3: Strings now allow line continuations (backslash + newline) ─
+//    Changed \\. to \\[^] so that backslash-newline is accepted inside
+//    strings rather than breaking the match.  [^] matches ANY character
+//    including newline in JFlex.
+DSTRING         = \" ([^\"\\] | \\[^])* \"
+SSTRING         = \' ([^\'\\] | \\[^])* \'
 
 BOOLEAN         = "true" | "false"
 
@@ -56,8 +71,13 @@ FUNC_CALL       = [A-Za-z_][A-Za-z0-9_]* \( ( [^()\r\n] | \( [^()\r\n]* \) )* \)
 WORD            = [A-Za-z_][A-Za-z0-9_\.\-:]*
 MAP_KEY         = [A-Za-z_][A-Za-z0-9_]* ":"
 
+// ── FIX 1: String-keyed map entries in object literals ────────────────
+//    INET uses {"eth0": ..., "eth1": ...} with quoted keys.
+//    This pattern matches  "string" :  as a single MAP_KEY token.
+DSTRING_MAP_KEY = \" ([^\"\\] | \\[^])* \" [ \t]* ":"
+
 // ── Iteration variable: ${...} ───────────────────────────────────────
-ITER_VAR        = \$\{ [^}\r\n]* \}
+ITER_VAR        = \$\{ ([^}\\\r\n] | \\[^])* \}
 
 // ── Bare variable reference: $name (without braces) ──────────────────
 BARE_VAR        = \$ [A-Za-z_][A-Za-z0-9_]*
@@ -76,6 +96,18 @@ BARE_VAR        = \$ [A-Za-z_][A-Za-z0-9_]*
     {SECTION}               { return SECTION_HEADER; }
     {KEY}                   { return KEY; }
     {EQ}                    { yybegin(AFTER_EQ); return EQ; }
+    // ── FIX 4: Continuation-line recovery ────────────────────────────
+    //    OMNeT++ allows multi-line expressions (e.g. "str1" + \n "str2")
+    //    without backslash continuation.  When LINE_END resets to
+    //    YYINITIAL, the next line may start with a string or other value
+    //    token.  We recover by switching back to AFTER_EQ.
+    {DSTRING}               { yybegin(AFTER_EQ); return STRING; }
+    {SSTRING}               { yybegin(AFTER_EQ); return STRING; }
+    // ── FIX 8b: Array/object continuation-line recovery ──────────────
+    //    When = is followed by newline and the value starts on the next
+    //    line with [ or {, we recover into the correct state.
+    "["                     { stateStack.push(AFTER_EQ); yybegin(IN_ARRAY); return LBRACK; }
+    "{"                     { stateStack.push(AFTER_EQ); yybegin(IN_OBJECT); return LBRACE; }
     [^]                     { return TokenType.BAD_CHARACTER; }
 }
 
@@ -88,10 +120,10 @@ BARE_VAR        = \$ [A-Za-z_][A-Za-z0-9_]*
     {INLINE_COMMENT}                           { yybegin(YYINITIAL); return COMMENT; }
     {LINE_END}                                 { yybegin(YYINITIAL); return TokenType.WHITE_SPACE; }
 
-    // ── Structural tokens ────────────────────────────────────────────
-    "["                                        { yybegin(IN_ARRAY); return LBRACK; }
+    // ── Structural tokens (FIX 7: push state before entering) ────────
+    "["                                        { stateStack.push(yystate()); yybegin(IN_ARRAY); return LBRACK; }
     "]"                                        { return RBRACK; }
-    "{"                                        { yybegin(IN_OBJECT); return LBRACE; }
+    "{"                                        { stateStack.push(yystate()); yybegin(IN_OBJECT); return LBRACE; }
     "}"                                        { return RBRACE; }
     "("                                        { return LPAREN; }
     ")"                                        { return RPAREN; }
@@ -128,6 +160,9 @@ BARE_VAR        = \$ [A-Za-z_][A-Za-z0-9_]*
     "&"                                        { return ARITH_OP; }
     "|"                                        { return ARITH_OP; }
 
+    // ── FIX 3b: Leading dot in values (e.g. .5s or ./path) ──────────
+    "."                                        { return ARITH_OP; }
+
     // ── Other punctuation ────────────────────────────────────────────
     ","                                        { return COMMA; }
 
@@ -142,8 +177,10 @@ BARE_VAR        = \$ [A-Za-z_][A-Za-z0-9_]*
     {LINE_END}              { return TokenType.WHITE_SPACE; }
     {LINE_CONT}             { return TokenType.WHITE_SPACE; }
     {INLINE_COMMENT}        { return COMMENT; }
-    "{"                     { yybegin(IN_OBJECT); return LBRACE; }
-    "]"                     { yybegin(AFTER_EQ);  return RBRACK; }
+    // ── FIX 7: push/pop state stack ──────────────────────────────────
+    "{"                     { stateStack.push(yystate()); yybegin(IN_OBJECT); return LBRACE; }
+    "["                     { stateStack.push(yystate()); yybegin(IN_ARRAY); return LBRACK; }
+    "]"                     { yybegin(stateStack.isEmpty() ? AFTER_EQ : stateStack.pop()); return RBRACK; }
     "("                     { return LPAREN; }
     ")"                     { return RPAREN; }
     ","                     { return COMMA; }
@@ -171,6 +208,13 @@ BARE_VAR        = \$ [A-Za-z_][A-Za-z0-9_]*
     {LINE_END}              { return TokenType.WHITE_SPACE; }
     {LINE_CONT}             { return TokenType.WHITE_SPACE; }
     {INLINE_COMMENT}        { return COMMENT; }
+    // ── FIX 10: Nested arrays inside objects ─────────────────────────
+    //    Handles patterns like  nodeFailureProtection: [{...}]
+    "["                     { stateStack.push(yystate()); yybegin(IN_ARRAY); return LBRACK; }
+    "{"                     { stateStack.push(yystate()); yybegin(IN_OBJECT); return LBRACE; }
+    "]"                     { yybegin(stateStack.isEmpty() ? AFTER_EQ : stateStack.pop()); return RBRACK; }
+    // ── FIX 1: String-keyed map entries (must come before MAP_KEY) ────
+    {DSTRING_MAP_KEY}       { return MAP_KEY; }
     {MAP_KEY}               { return MAP_KEY; }
     {ITER_VAR}              { return ITER_VAR; }
     {BARE_VAR}              { return ITER_VAR; }
@@ -183,6 +227,7 @@ BARE_VAR        = \$ [A-Za-z_][A-Za-z0-9_]*
     {WORD}                  { return VALUE; }
     ","                     { return COMMA; }
     [\+\-\*\/]              { return ARITH_OP; }
-    "}"                     { yybegin(IN_ARRAY); return RBRACE; }
+    // ── FIX 7: pop state stack ───────────────────────────────────────
+    "}"                     { yybegin(stateStack.isEmpty() ? AFTER_EQ : stateStack.pop()); return RBRACE; }
     [^]                     { return TokenType.BAD_CHARACTER; }
 }

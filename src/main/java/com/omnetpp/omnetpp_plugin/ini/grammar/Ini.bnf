@@ -86,10 +86,14 @@ inivalue ::= arrayValue
 //  This replaces the old strict scalarSeq rule.
 private valueSeq ::= valuePart+
 
+// ── FIX 2: Added arrayValue and objectValue so that [ ] and { }
+//    can appear inside a value sequence, not just at the start.
 private valuePart ::= scalar
                     | ARITH_OP
                     | COMMA
                     | parenGroup
+                    | arrayValue
+                    | objectValue
 
 // ── A single scalar term ─────────────────────────────────────────────
 private scalar ::= NUMBER
@@ -115,9 +119,12 @@ arrayElement ::= objectValue
 // ── Value sequence inside arrays (same permissive approach) ──────────
 private arrayValueSeq ::= arrayValuePart+
 
+// ── FIX 2: Added arrayValue and objectValue to array value parts
 private arrayValuePart ::= scalar
                          | ARITH_OP
                          | parenGroup
+                         | arrayValue
+                         | objectValue
 
 // ── Object literal: { key: val, key: val, ... } ─────────────────────
 objectValue ::= LBRACE objectContent? RBRACE
@@ -129,6 +136,10 @@ mapEntry ::= MAP_KEY mapValue
 
 private mapValue ::= mapValuePart+
 
+// ── FIX 9: Added arrayValue and objectValue to map value parts
+//    so nested structures like  nodeFailureProtection: [{...}]  work.
 private mapValuePart ::= scalar
                        | ARITH_OP
                        | parenGroup
+                       | arrayValue
+                       | objectValue
