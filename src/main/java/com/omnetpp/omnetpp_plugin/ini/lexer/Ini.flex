@@ -68,7 +68,7 @@ BOOLEAN         = "true" | "false"
 // ── Function call: balanced parens, up to one level of nesting ───────
 FUNC_CALL       = [A-Za-z_][A-Za-z0-9_]* \( ( [^()\r\n] | \( [^()\r\n]* \) )* \)
 
-WORD            = [A-Za-z_][A-Za-z0-9_\.\-:]*
+WORD            = [A-Za-z_][A-Za-z0-9_\.\-:']*
 MAP_KEY         = [A-Za-z_][A-Za-z0-9_]* ":"
 
 // ── FIX 1: String-keyed map entries in object literals ────────────────

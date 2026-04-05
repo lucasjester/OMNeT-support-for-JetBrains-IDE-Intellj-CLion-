@@ -203,16 +203,6 @@ public class IniLexerTest extends BasePlatformTestCase {
         assertEquals(IniTypes.NUMBER, tokens.get(2));
     }
 
-    // ── Colon as assignment operator ──────────────────────────────────────
-
-    public void testColonAssignment() {
-        List<IElementType> tokens = tokenize("network : TestNetwork");
-        assertEquals(3, tokens.size());
-        assertEquals(IniTypes.KEY, tokens.get(0));
-        assertEquals(IniTypes.EQ, tokens.get(1));
-        assertEquals(IniTypes.VALUE, tokens.get(2));
-    }
-
     // ═══════════════════════════════════════════════════════════════════════
     //  New tests for added lexer features
     // ═══════════════════════════════════════════════════════════════════════

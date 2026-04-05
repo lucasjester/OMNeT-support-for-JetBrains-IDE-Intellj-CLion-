@@ -76,7 +76,7 @@ property_name ::= AT NAME (LBRACK prop_index RBRACK)?
 
 private prop_index ::= prop_index_word (DOT prop_index_word)* MUL?
 
-private prop_index_word ::= NAME
+private prop_index_word ::= NAME | INTCONSTANT
     | SUBMODULEDEF | GATESDEF | CHANNEL | PARAMETERS | TYPES
     | KW_CONNECTIONS | SIMPLE | MODULE | NETWORK | MODULEINTERFACE
     | CHANNELINTERFACE | ALLOWUNCONNECTED | FOR | IF | EXTENDS | LIKE
@@ -84,7 +84,6 @@ private prop_index_word ::= NAME
     | VOLATILE | INPUT | OUTPUT | INOUT
     | DOUBLE | INT | STRING | BOOL | OBJECTDEF | XML | XMLDOC
     | TRUE | FALSE | NAN | INF | NULL | NULLPTR | UNDEFINED
-
 
 opt_property_keys ::= property_keys?
 

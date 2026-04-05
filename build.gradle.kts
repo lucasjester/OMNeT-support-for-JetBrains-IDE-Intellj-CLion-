@@ -82,6 +82,7 @@ tasks {
     test {
         systemProperty("idea.home.path", intellijPlatform.sandboxContainer.get().toString())
         systemProperty("inet.ned.path", "${System.getProperty("user.home")}/Downloads/workspace/inet")
+        systemProperty("omnetpp.path", "${System.getProperty("user.home")}/Downloads/omnetpp-6.3.0")
     }
 
 }
