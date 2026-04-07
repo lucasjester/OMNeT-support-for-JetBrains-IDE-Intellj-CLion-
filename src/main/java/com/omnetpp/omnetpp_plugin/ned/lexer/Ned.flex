@@ -22,8 +22,7 @@ import static com.omnetpp.omnetpp_plugin.ned.psi.NedTypes.*;
 
 WHITE_SPACE      = [ \t\r\n\f]+
 LINE_COMMENT     = "//".*
-BLOCK_COMMENT    = "/\\*([^*]|\\*+[^*/])*\\*/"
-
+BLOCK_COMMENT    = "/*" ~"*/"
 INTCONSTANT      = [0-9]+
 REALCONSTANT     = [0-9]+"."[0-9]+([eE][+-]?[0-9]+)? | "."[0-9]+([eE][+-]?[0-9]+)? | [0-9]+[eE][+-]?[0-9]+
 STRINGCONSTANT   = ('([^'\\]|\\.|\\\r?\n)*'|\"([^\"\\]|\\.|\\\r?\n)*\")

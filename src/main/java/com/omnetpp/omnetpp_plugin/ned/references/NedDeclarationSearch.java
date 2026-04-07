@@ -185,7 +185,12 @@ public final class NedDeclarationSearch {
             // ── Fast text scan: find the declaration offset ───────────────────
             String content;
             try {
-                content = new String(vf.contentsToByteArray(), StandardCharsets.UTF_8);
+                com.intellij.openapi.editor.Document doc =
+                        com.intellij.openapi.fileEditor.FileDocumentManager
+                                .getInstance().getCachedDocument(vf);
+                content = (doc != null)
+                        ? doc.getText()
+                        : new String(vf.contentsToByteArray(), StandardCharsets.UTF_8);
             } catch (Exception e) {
                 continue;
             }

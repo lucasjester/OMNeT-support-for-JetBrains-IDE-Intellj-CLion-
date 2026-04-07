@@ -293,6 +293,10 @@ public class NedAnnotator implements Annotator {
     @Nullable
     private static String readFileContent(@NotNull VirtualFile vf) {
         try {
+            com.intellij.openapi.editor.Document doc =
+                    com.intellij.openapi.fileEditor.FileDocumentManager
+                            .getInstance().getCachedDocument(vf);
+            if (doc != null) return doc.getText();
             return new String(vf.contentsToByteArray(), StandardCharsets.UTF_8);
         } catch (Exception e) {
             return null;

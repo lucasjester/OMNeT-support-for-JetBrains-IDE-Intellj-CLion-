@@ -57,7 +57,7 @@ section ::= SECTION_HEADER
 includeDirective ::= INCLUDE
 
 // ── Key = value assignment ───────────────────────────────────────────
-keyValue ::= KEY EQ inivalue?
+keyValue ::= KEY+ EQ inivalue?
 
 // ══════════════════════════════════════════════════════════════════════
 //  Value grammar — deliberately permissive

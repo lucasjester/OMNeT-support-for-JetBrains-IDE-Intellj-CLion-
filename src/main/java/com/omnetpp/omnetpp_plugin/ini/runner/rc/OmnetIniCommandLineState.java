@@ -100,10 +100,10 @@ public class OmnetIniCommandLineState extends CommandLineState {
         nedSet.add(workDir);
 
         // b) auto-detect: directories named "src" under the project root
-        if (projectBasePath != null) {
-            Path projRoot = Paths.get(projectBasePath);
-            addSrcSubDirs(nedSet, projRoot, 3);
-        }
+        //if (projectBasePath != null) {
+           // Path projRoot = Paths.get(projectBasePath);
+            //addSrcSubDirs(nedSet, projRoot, 3);
+        //}
 
         // c) global NED paths (Settings -> OMNeT++ Run -> NED paths)
         splitSemicolon(settings.getNedPaths()).forEach(nedSet::add);
@@ -160,7 +160,10 @@ public class OmnetIniCommandLineState extends CommandLineState {
                     .forEach(path -> {
                         try {
                             String original = Files.readString(path, StandardCharsets.UTF_8);
+                            System.out.println("=== FILE: " + path);                           // NEU
+                            System.out.println("=== MATCH: " + PACKAGE_LINE.matcher(original).find());  // NEU
                             String modified = PACKAGE_LINE.matcher(original).replaceFirst("//$1");
+                            System.out.println("=== CHANGED: " + !modified.equals(original));   // NEU
                             if (!modified.equals(original)) {
                                 originalContents.put(path, original);
                                 FileWriter fw = new FileWriter(path.toFile(), StandardCharsets.UTF_8, false);
