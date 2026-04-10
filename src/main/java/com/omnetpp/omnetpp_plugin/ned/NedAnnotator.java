@@ -25,6 +25,13 @@ import java.util.regex.Pattern;
  * Annotator for the NED language.
  *
  * 1. Highlights unresolved module/channel type references as errors.
+ *    Channel-vs-module dispatch is delegated to {@link NedDottedname#getReferenceKind()},
+ *    which is implemented by NedDottednameMixin attached via Grammar-Kit.
+ *    The annotator never re-derives this decision from parent inspection;
+ *    it asks the dottedname what kind of reference it is and dispatches
+ *    accordingly. This guarantees the annotator and {@code NedReferenceContributor}
+ *    cannot disagree about the role of any given dottedname.
+ *
  * 2. Highlights unknown submodule instance names in connections as errors,
  *    walking the full "extends" chain to find inherited submodules.
  *
@@ -77,15 +84,14 @@ public class NedAnnotator implements Annotator {
     public void annotate(@NotNull PsiElement element, @NotNull AnnotationHolder holder) {
 
         // ── 1. Unresolved type references ────────────────────────────────────
+        // Dispatch is delegated to the dottedname itself via getReferenceKind().
+        // The annotator no longer inspects parent types — that logic lives on
+        // NedDottednameMixin and is shared with NedReferenceContributor.
         if (element instanceof NedDottedname dottedname) {
-            PsiElement parent = dottedname.getParent();
-
-            if (parent instanceof NedSubmoduleheader) {
-                checkModuleType(dottedname, holder);
-            } else if (parent instanceof NedExtendsname) {
-                checkExtendsType(dottedname, holder);
-            } else if (parent instanceof NedChannelspecHeader) {
-                checkChannelType(dottedname, holder);
+            switch (dottedname.getReferenceKind()) {
+                case CHANNEL -> checkChannelType(dottedname, holder);
+                case MODULE  -> checkModuleType(dottedname, holder);
+                case NONE    -> { /* not a type reference, no check needed */ }
             }
             return;
         }
@@ -99,16 +105,6 @@ public class NedAnnotator implements Annotator {
     // ═════════════════════════════════════════════════════════════════════════
     // Type reference checks
     // ═════════════════════════════════════════════════════════════════════════
-
-    private void checkExtendsType(@NotNull NedDottedname dottedname,
-                                  @NotNull AnnotationHolder holder) {
-        if (PsiTreeUtil.getParentOfType(dottedname, NedChannelheader.class) != null
-                || PsiTreeUtil.getParentOfType(dottedname, NedChannelinterfaceheader.class) != null) {
-            checkChannelType(dottedname, holder);
-        } else {
-            checkModuleType(dottedname, holder);
-        }
-    }
 
     private void checkModuleType(@NotNull NedDottedname dottedname,
                                  @NotNull AnnotationHolder holder) {

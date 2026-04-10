@@ -41,7 +41,11 @@ definition ::= packagedeclaration
 
 packagedeclaration ::= PACKAGE dottedname SEMI
 
-dottedname ::= NAME (DOT NAME)*
+dottedname ::= NAME (DOT NAME)* {
+  mixin="com.omnetpp.omnetpp_plugin.ned.psi.impl.NedDottednameMixin"
+  implements="com.omnetpp.omnetpp_plugin.ned.psi.NedReferenceContext"
+  methods=[getReferenceKind]
+}
 
 //dottedname ::= dottedname DOT NAME
              //| NAME
