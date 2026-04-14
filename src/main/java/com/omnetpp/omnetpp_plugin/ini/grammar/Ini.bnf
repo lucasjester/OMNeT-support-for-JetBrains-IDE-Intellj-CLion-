@@ -20,6 +20,7 @@ private item ::= section
                | COMMENT
 
 section          ::= SECTION_HEADER
+
 includeDirective ::= INCLUDE
 
 keyValue ::= KEY+ EQ inivalue?

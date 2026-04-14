@@ -97,7 +97,7 @@ public class OmnetIniCommandLineState extends CommandLineState {
         LinkedHashSet<String> nedSet = new LinkedHashSet<>();
 
         // a) current working dir (the directory containing the .ini file)
-        nedSet.add(workDir);
+        // nedSet.add(workDir);
 
         // b) auto-detect: directories named "src" under the project root
         //if (projectBasePath != null) {
@@ -121,7 +121,7 @@ public class OmnetIniCommandLineState extends CommandLineState {
         // ONLY the INI file's own directory is affected — src/ and other
         // NED paths are left untouched because their packages resolve
         // correctly from their own roots.
-        commentOutPackageDeclarations(workDir);
+        //commentOutPackageDeclarations(workDir);
 
         for (String p : nedSet) {
             cmd.addParameters("-n", p);
