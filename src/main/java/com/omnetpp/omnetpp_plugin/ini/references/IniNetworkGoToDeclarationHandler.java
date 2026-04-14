@@ -5,7 +5,6 @@ import com.intellij.lang.ASTNode;
 import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.project.Project;
 import com.intellij.psi.*;
-import com.intellij.psi.util.PsiTreeUtil;
 import com.omnetpp.omnetpp_plugin.ini.psi.IniInivalue;
 import com.omnetpp.omnetpp_plugin.ini.psi.IniKeyValue;
 import com.omnetpp.omnetpp_plugin.ini.psi.IniTypes;
@@ -13,17 +12,27 @@ import com.omnetpp.omnetpp_plugin.ned.references.NedDeclarationSearch;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Ctrl+Click handler: navigates from  network = SomeName  in a .ini file
- * to the matching  network SomeName { }  declaration in a .ned file.
+ * Ctrl+Click handler: navigates from {@code network = SomeName} in a
+ * {@code .ini} file to the matching {@code network SomeName { }}
+ * declaration in a {@code .ned} file.
  *
- * Delegates the actual search to {@link NedDeclarationSearch#findModuleType},
- * which uses a regex-based text scan + offset resolution instead of parsing
- * the PSI tree of every .ned file.  This keeps resolution fast even in large
- * projects such as the full INET framework (thousands of .ned files).
+ * <p>Delegates the actual search to
+ * {@link NedDeclarationSearch#findModuleType}, which performs pure PSI
+ * traversal with per-file caching. Each NED file maintains a cached
+ * {@code name → header} map that is automatically invalidated when the
+ * file's PSI changes, so resolution stays fast even in large projects
+ * such as the full INET framework (thousands of {@code .ned} files).</p>
  *
- * Register in plugin.xml:
+ * <p>{@code findModuleType} handles all declaration kinds that can appear
+ * on the right-hand side of {@code network =} (simple module, compound
+ * module, network, module interface), which is exactly what this handler
+ * needs.</p>
+ *
+ * <p>Register in {@code plugin.xml}:</p>
+ * <pre>{@code
  *   <gotoDeclarationHandler
  *       implementation="com.omnetpp.omnetpp_plugin.ini.references.IniNetworkGoToDeclarationHandler"/>
+ * }</pre>
  */
 public class IniNetworkGoToDeclarationHandler implements GotoDeclarationHandler {
 
@@ -59,9 +68,6 @@ public class IniNetworkGoToDeclarationHandler implements GotoDeclarationHandler 
         Project project = sourceElement.getProject();
         PsiFile currentFile = sourceElement.getContainingFile();
 
-        // findModuleType handles: current file PSI check → indexed text scan
-        // → NED-path text scan.  It works with all declaration types
-        // (simple, module, network, …), which is exactly what we need here.
         PsiElement target = NedDeclarationSearch.findModuleType(
                 project, currentFile, networkName);
 

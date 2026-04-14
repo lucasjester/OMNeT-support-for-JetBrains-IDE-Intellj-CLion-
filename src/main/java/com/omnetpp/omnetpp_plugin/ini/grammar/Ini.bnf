@@ -10,136 +10,34 @@
   elementTypeHolderClass="com.omnetpp.omnetpp_plugin.ini.psi.IniTypes"
   elementTypeClass="com.omnetpp.omnetpp_plugin.ini.psi.IniElementType"
   tokenTypeClass="com.omnetpp.omnetpp_plugin.ini.psi.IniTokenType"
-
-  tokens = [
-    // structural punctuation
-    LBRACK   = "["
-    RBRACK   = "]"
-    LBRACE   = "{"
-    RBRACE   = "}"
-    LPAREN   = "("
-    RPAREN   = ")"
-    COMMA    = ","
-
-    // all lexer-emitted value tokens must be listed here
-    // so Grammar-Kit doesn't re-generate them as duplicates
-    VALUE    = "VALUE"
-    NUMBER   = "NUMBER"
-    STRING   = "STRING"
-    BOOLEAN  = "BOOLEAN"
-    FUNC_CALL = "FUNC_CALL"
-    ARITH_OP  = "ARITH_OP"
-    MAP_KEY   = "MAP_KEY"
-    ITER_VAR  = "ITER_VAR"
-    KEY       = "KEY"
-    EQ        = "EQ"
-    COMMENT   = "COMMENT"
-    INCLUDE   = "INCLUDE"
-    SECTION_HEADER = "SECTION_HEADER"
-  ]
 }
 
-// ══════════════════════════════════════════════════════════════════════
-//  Top-level rule
-// ══════════════════════════════════════════════════════════════════════
 iniFile ::= item*
 
 private item ::= section
                | keyValue
                | includeDirective
                | COMMENT
-               | WHITE_SPACE
 
-// ── Section header ───────────────────────────────────────────────────
-section ::= SECTION_HEADER
-
-// ── Include directive ────────────────────────────────────────────────
+section          ::= SECTION_HEADER
 includeDirective ::= INCLUDE
 
-// ── Key = value assignment ───────────────────────────────────────────
 keyValue ::= KEY+ EQ inivalue?
 
-// ══════════════════════════════════════════════════════════════════════
-//  Value grammar — deliberately permissive
-//
-//  OMNeT++ INI values are essentially "everything until end of line".
-//  Real-world INET files contain patterns like:
-//    32 bytes              (space-separated unit)
-//    exponential(1s) + 2ms (expression with function call)
-//    Visualization of ...  (unquoted multi-word description)
-//    xml("<foo/>")         (function call with string argument)
-//    ${N=1,2,5..50}        (iteration variable)
-//    $x > 5 ? "a" : "b"   (ternary expression with bare var)
-//
-//  Rather than trying to model the full OMNeT++ expression language
-//  (which would require a much more complex grammar), we accept any
-//  sequence of value tokens.  This is appropriate for an editor plugin
-//  whose primary job is syntax highlighting and PSI tree construction,
-//  not semantic validation.
-// ══════════════════════════════════════════════════════════════════════
+inivalue ::= valuePart+
 
-inivalue ::= arrayValue
-        | objectValue
-        | valueSeq
-
-// ── Permissive value sequence: any mix of scalars, operators, etc. ───
-//  This replaces the old strict scalarSeq rule.
-private valueSeq ::= valuePart+
-
-// ── FIX 2: Added arrayValue and objectValue so that [ ] and { }
-//    can appear inside a value sequence, not just at the start.
-private valuePart ::= scalar
+private valuePart ::= NUMBER
+                    | STRING
+                    | BOOLEAN
+                    | FUNC_CALL
+                    | ITER_VAR
+                    | VALUE
                     | ARITH_OP
                     | COMMA
-                    | parenGroup
-                    | arrayValue
-                    | objectValue
-
-// ── A single scalar term ─────────────────────────────────────────────
-private scalar ::= NUMBER
-                 | STRING
-                 | BOOLEAN
-                 | FUNC_CALL
-                 | ITER_VAR
-                 | VALUE
-
-// ── Parenthesized group: ( ... ) with any content ────────────────────
-parenGroup ::= LPAREN parenContent* RPAREN
-
-private parenContent ::= valuePart
-
-// ── Array literal: [ element, element, ... ] ─────────────────────────
-arrayValue ::= LBRACK arrayContent? RBRACK
-
-private arrayContent ::= arrayElement (COMMA arrayElement)*
-
-arrayElement ::= objectValue
-               | arrayValueSeq
-
-// ── Value sequence inside arrays (same permissive approach) ──────────
-private arrayValueSeq ::= arrayValuePart+
-
-// ── FIX 2: Added arrayValue and objectValue to array value parts
-private arrayValuePart ::= scalar
-                         | ARITH_OP
-                         | parenGroup
-                         | arrayValue
-                         | objectValue
-
-// ── Object literal: { key: val, key: val, ... } ─────────────────────
-objectValue ::= LBRACE objectContent? RBRACE
-
-private objectContent ::= mapEntry (COMMA mapEntry)*
-
-// ── Map entry: key: value (value can be a permissive sequence) ───────
-mapEntry ::= MAP_KEY mapValue
-
-private mapValue ::= mapValuePart+
-
-// ── FIX 9: Added arrayValue and objectValue to map value parts
-//    so nested structures like  nodeFailureProtection: [{...}]  work.
-private mapValuePart ::= scalar
-                       | ARITH_OP
-                       | parenGroup
-                       | arrayValue
-                       | objectValue
+                    | MAP_KEY
+                    | LBRACK
+                    | RBRACK
+                    | LBRACE
+                    | RBRACE
+                    | LPAREN
+                    | RPAREN

@@ -50,11 +50,12 @@ dependencies {
 }
 
 intellijPlatform {
+    sandboxContainer = rootProject.layout.projectDirectory.dir(".sandbox")
+
     pluginConfiguration {
         ideaVersion {
             sinceBuild = "251"
             untilBuild = "259.*"
-
         }
 
         changeNotes = """
