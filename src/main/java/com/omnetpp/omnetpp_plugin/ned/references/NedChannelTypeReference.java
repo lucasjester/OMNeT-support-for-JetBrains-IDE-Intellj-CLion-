@@ -7,7 +7,9 @@ import com.intellij.psi.PsiFile;
 import com.intellij.psi.PsiReferenceBase;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
+import com.intellij.lang.ASTNode;
+import com.omnetpp.omnetpp_plugin.ned.psi.NedTypes;
+import com.omnetpp.omnetpp_plugin.ned.psi.impl.NedElementFactory;
 public class NedChannelTypeReference extends PsiReferenceBase<PsiElement> {
 
     public NedChannelTypeReference(@NotNull PsiElement element) {
@@ -30,5 +32,18 @@ public class NedChannelTypeReference extends PsiReferenceBase<PsiElement> {
         return NedDeclarationSearch
                 .allChannelTypeNames(myElement.getProject())
                 .toArray();
+    }
+    @Override
+    public PsiElement handleElementRename(@NotNull String newElementName) {
+        ASTNode node = myElement.getNode();
+        ASTNode nameNode = node.findChildByType(NedTypes.NAME);
+        if (nameNode != null) {
+            PsiElement newId = NedElementFactory.createNameIdentifier(
+                    myElement.getProject(), newElementName);
+            if (newId != null) {
+                node.replaceChild(nameNode, newId.getNode());
+            }
+        }
+        return myElement;
     }
 }

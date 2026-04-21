@@ -1,6 +1,6 @@
 {
   lexerClass="com.omnetpp.omnetpp_plugin.NedLexer"
-  parserClass="com.omnetpp.omnetpp_plugin.parser.NedParser"
+  parserClass="com.omnetpp.omnetpp_plugin.ned.parser.NedParser"
   //extends="com.intellij.extapi.psi.ASTWrapperPsiElement"
   extends="com.omnetpp.omnetpp_plugin.ned.psi.impl.NedPsiElementImpl"
   psiClassPrefix="Ned"
@@ -27,7 +27,7 @@ definitions ::= definition+
 
 
 definition ::= packagedeclaration
-             | import_def
+             | import
              | propertydecl
              | fileproperty
              | channeldefinition
@@ -51,7 +51,7 @@ dottedname ::= NAME (DOT NAME)* {
              //| NAME
 
 
-import_def ::= KW_IMPORT importspec SEMI
+import ::= KW_IMPORT importspec SEMI
 
 importspec ::= importname (DOT importname)*
 
@@ -149,7 +149,11 @@ likename ::= dottedname
 
 channelinterfacedefinition ::= channelinterfaceheader LBRACE opt_paramblock RBRACE
 
-channelinterfaceheader ::= CHANNELINTERFACE NAME opt_interfaceinheritance
+channelinterfaceheader ::= CHANNELINTERFACE NAME opt_interfaceinheritance {
+  mixin="com.omnetpp.omnetpp_plugin.ned.psi.impl.NedNamedElementImpl"
+  implements="com.omnetpp.omnetpp_plugin.ned.psi.NedNamedElement"
+  methods=[getName setName getNameIdentifier]
+}
 
 opt_interfaceinheritance ::= (EXTENDS extendsnames)?
 
@@ -524,3 +528,4 @@ realconstant_ext ::= REALCONSTANT
                    | NAN
 
 opt_semicolon ::= SEMI?
+

@@ -1,6 +1,6 @@
 package com.omnetpp.omnetpp_plugin.ned;
 import com.omnetpp.omnetpp_plugin.ned.lexer.NedTokenSets;
-import com.omnetpp.omnetpp_plugin.parser.NedParser;
+import com.omnetpp.omnetpp_plugin.ned.parser.NedParser;
 import com.intellij.lang.ASTNode;
 import com.intellij.lang.ParserDefinition;
 import com.intellij.lang.PsiParser;

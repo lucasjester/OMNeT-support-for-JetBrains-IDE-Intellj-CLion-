@@ -1,7 +1,6 @@
 // Ned lexer for OMNeT++ NED files
 
-package com.omnetpp.omnetpp_plugin;
-
+package com.omnetpp.omnetpp_plugin.ned;
 import com.intellij.psi.tree.IElementType;
 import com.intellij.psi.TokenType;
 import com.intellij.lexer.FlexLexer;

@@ -9,6 +9,7 @@ import com.omnetpp.omnetpp_plugin.ned.psi.*;
 import org.jetbrains.annotations.Nls;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import com.intellij.psi.PsiFile;
 
 
 public class NedDocumentationProvider extends AbstractDocumentationProvider {
@@ -101,16 +102,10 @@ public class NedDocumentationProvider extends AbstractDocumentationProvider {
 
     @Nullable
     private static String getExtendsInfo(PsiElement element) {
-        // The header's parent is the definition (e.g. simplemoduledefinition).
-        // Look for an opt_inheritance → inheritance → extendsname child.
-        PsiElement definition = element.getParent();
-        if (definition == null) return null;
-
-        for (PsiElement child : definition.getChildren()) {
+        for (PsiElement child : element.getChildren()) {
             if (child instanceof NedOptInheritance) {
                 String text = child.getText().trim();
                 if (!text.isEmpty()) {
-                    // Extract just the "extends Foo" part
                     return text.replaceFirst("^extends\\s+", "").trim();
                 }
             }
@@ -121,21 +116,28 @@ public class NedDocumentationProvider extends AbstractDocumentationProvider {
     /**
      * Finds the comment block immediately preceding this element (or its parent definition).
      */
-    @Nullable
     private static String findPrecedingComment(PsiElement element) {
         // Go to the definition (parent of the header)
         PsiElement definition = element.getParent();
         if (definition == null) definition = element;
 
+        // Walk up to the topmost non-file parent so we're at the same
+        // level where preceding comments attach in the PSI tree. The NED
+        // grammar nests a simple-module declaration as
+        // NedFile > NedDefinitions > NedDefinition > NedSimplemoduledefinition > NedSimplemoduleheader,
+        // so a single level up is not enough.
+        while (definition.getParent() != null
+                && !(definition.getParent() instanceof PsiFile)) {
+            definition = definition.getParent();
+        }
+
         PsiElement prev = definition.getPrevSibling();
-        // Skip whitespace
         while (prev instanceof PsiWhiteSpace) {
             prev = prev.getPrevSibling();
         }
 
         if (prev instanceof PsiComment) {
             String text = prev.getText();
-            // Clean up comment markers
             text = text.replaceAll("^//\\s?", "");
             text = text.replaceAll("^/\\*+\\s?", "");
             text = text.replaceAll("\\s?\\*+/$", "");

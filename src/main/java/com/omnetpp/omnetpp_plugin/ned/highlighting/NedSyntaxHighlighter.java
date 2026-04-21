@@ -21,9 +21,6 @@ public class NedSyntaxHighlighter extends SyntaxHighlighterBase {
     public static final TextAttributesKey KEYWORD =
             createTextAttributesKey("NED_KEYWORD", DefaultLanguageHighlighterColors.KEYWORD);
 
-    public static final TextAttributesKey TYPE =
-            createTextAttributesKey("NED_TYPE", DefaultLanguageHighlighterColors.CLASS_NAME);
-
     public static final TextAttributesKey IDENTIFIER =
             createTextAttributesKey("NED_IDENTIFIER", DefaultLanguageHighlighterColors.IDENTIFIER);
 
@@ -80,7 +77,6 @@ public class NedSyntaxHighlighter extends SyntaxHighlighterBase {
 
         // ===== Identifiers / names =====
         KEYS.put(NedTypes.NAME, IDENTIFIER);
-        KEYS.put(NedTypes.TYPENAME, TYPE);
 
         // ===== Keywords (language constructs) =====
         IElementType[] keywords = new IElementType[]{
@@ -113,7 +109,8 @@ public class NedSyntaxHighlighter extends SyntaxHighlighterBase {
                 NedTypes.THIS,
                 NedTypes.PARENT,
                 NedTypes.EXISTS,
-                NedTypes.SIZEOF
+                NedTypes.SIZEOF,
+                NedTypes.TYPENAME
         };
         for (IElementType k : keywords) {
             KEYS.put(k, KEYWORD);
@@ -133,7 +130,7 @@ public class NedSyntaxHighlighter extends SyntaxHighlighterBase {
             KEYS.put(lk, KEYWORD);
         }
 
-        // ===== Primitive type keywords (highlighted as TYPE) =====
+        // ===== Primitive type keywords (highlighted as KEYWORD, matching IDE convention) =====
         IElementType[] primitiveTypes = new IElementType[]{
                 NedTypes.BOOL,
                 NedTypes.INT,
@@ -165,6 +162,8 @@ public class NedSyntaxHighlighter extends SyntaxHighlighterBase {
                 NedTypes.MOD,
                 NedTypes.POWER,
                 NedTypes.ARROW,
+                NedTypes.LARROW,
+                NedTypes.BIARROW,
                 NedTypes.DOTDOT,
                 NedTypes.AT
         };

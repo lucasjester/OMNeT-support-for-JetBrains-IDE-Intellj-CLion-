@@ -13,7 +13,6 @@ public final class OmnetRunSettings implements PersistentStateComponent<OmnetRun
 
     public static final class State {
         public String oppRunPath  = "opp_run";
-        public String commonArgs  = "";
         public String simLibPath  = "";   // global compiled binary/library (-l)
         /**
          * Semicolon-separated list of extra NED source paths added to EVERY run.
@@ -43,11 +42,6 @@ public final class OmnetRunSettings implements PersistentStateComponent<OmnetRun
     }
     public void setOppRunPath(@NotNull String v) { state.oppRunPath = v; }
 
-    // ── common extra args ────────────────────────────────────────────────────
-    public @NotNull String getCommonArgs() {
-        return state.commonArgs == null ? "" : state.commonArgs;
-    }
-    public void setCommonArgs(@NotNull String v) { state.commonArgs = v; }
 
     // ── global sim binary / -l library ──────────────────────────────────────
     public @NotNull String getSimLibPath() {

@@ -15,6 +15,7 @@ public class OmnetIniRunSettingsEditor extends SettingsEditor<OmnetIniRunConfigu
     private JTextArea  libraries;
     private JCheckBox  showGui;
     private JPanel     panel;
+    private JTextArea  extraArgs;
 
     @Override
     protected void resetEditorFrom(@NotNull OmnetIniRunConfiguration s) {
@@ -24,6 +25,7 @@ public class OmnetIniRunSettingsEditor extends SettingsEditor<OmnetIniRunConfigu
         nedPaths.setText(s.getNedPaths());
         libraries.setText(s.getLibraries());
         showGui.setSelected(s.isShowGui());
+        extraArgs.setText(s.getExtraArgs());
     }
 
     @Override
@@ -34,6 +36,7 @@ public class OmnetIniRunSettingsEditor extends SettingsEditor<OmnetIniRunConfigu
         s.setNedPaths(nedPaths.getText());
         s.setLibraries(libraries.getText());
         s.setShowGui(showGui.isSelected());
+        s.setExtraArgs(extraArgs.getText());
     }
 
     @Override
@@ -61,7 +64,7 @@ public class OmnetIniRunSettingsEditor extends SettingsEditor<OmnetIniRunConfigu
         top.add(showGui);
 
         // ── center: multi-line fields ────────────────────────────────────────
-        JPanel center = new JPanel(new GridLayout(2, 1, 0, 8));
+        JPanel center = new JPanel(new GridLayout(3, 1, 0, 8));
 
         nedPaths = new JTextArea(3, 60);
         nedPaths.setLineWrap(true);
@@ -80,6 +83,16 @@ public class OmnetIniRunSettingsEditor extends SettingsEditor<OmnetIniRunConfigu
                 BorderLayout.NORTH);
         libPanel.add(new JScrollPane(libraries), BorderLayout.CENTER);
         center.add(libPanel);
+
+        extraArgs = new JTextArea(2, 60);
+        extraArgs.setLineWrap(true);
+        JPanel argsPanel = new JPanel(new BorderLayout(4, 4));
+        argsPanel.add(new JLabel(
+                        "<html>Additional <code>opp_run</code> arguments " +
+                                "<small>(appended verbatim to the command line)</small></html>"),
+                BorderLayout.NORTH);
+        argsPanel.add(new JScrollPane(extraArgs), BorderLayout.CENTER);
+        center.add(argsPanel);
 
         panel.add(top,    BorderLayout.NORTH);
         panel.add(center, BorderLayout.CENTER);

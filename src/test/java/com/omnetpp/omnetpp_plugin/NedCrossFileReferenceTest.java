@@ -4,6 +4,9 @@ import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiReference;
 import com.intellij.testFramework.fixtures.BasePlatformTestCase;
 import com.omnetpp.omnetpp_plugin.ned.NedFileType;
+import com.omnetpp.omnetpp_plugin.ned.psi.NedChannelheader;
+import com.omnetpp.omnetpp_plugin.ned.psi.NedCompoundmoduleheader;
+import com.omnetpp.omnetpp_plugin.ned.psi.NedNetworkheader;
 import com.omnetpp.omnetpp_plugin.ned.psi.NedSimplemoduleheader;
 
 /**
@@ -11,13 +14,13 @@ import com.omnetpp.omnetpp_plugin.ned.psi.NedSimplemoduleheader;
  *
  * <p>Verifies that a submodule type reference in one NED file resolves to
  * a module declaration in a <em>different</em> NED file within the same
- * project.  This exercises the cross-file search strategy described in
- * Section 4.5 of the thesis (hybrid PSI tree traversal + text-scan
- * fallback).</p>
+ * project. This exercises the cross-file search strategy based on pure
+ * PSI tree traversal via {@link com.omnetpp.omnetpp_plugin.ned.references.NedDeclarationSearch}.</p>
  *
  * <p>The existing {@link NedReferenceTest} only tests same-file resolution.
- * This test covers FR-5's requirement that references resolve "including
- * declarations located in other NED files within the project."</p>
+ * This test covers FR-3's cross-file NED resolution scope, which requires
+ * references to resolve to declarations located in other NED files within
+ * the project.</p>
  */
 public class NedCrossFileReferenceTest extends BasePlatformTestCase {
 
@@ -80,7 +83,11 @@ public class NedCrossFileReferenceTest extends BasePlatformTestCase {
         PsiReference reference = myFixture.getReferenceAtCaretPositionWithAssertion();
         PsiElement resolved = reference.resolve();
 
+        // 4. Verify resolution target: presence, PSI type, and name
         assertNotNull("Cross-file compound module reference should resolve", resolved);
+        NedCompoundmoduleheader header =
+                assertInstanceOf(resolved, NedCompoundmoduleheader.class);
+        assertEquals("MySubnet", header.getName());
     }
 
     /**
@@ -104,7 +111,48 @@ public class NedCrossFileReferenceTest extends BasePlatformTestCase {
         PsiReference reference = myFixture.getReferenceAtCaretPositionWithAssertion();
         PsiElement resolved = reference.resolve();
 
+        // 4. Verify resolution target: presence, PSI type, and name
         assertNotNull("Cross-file network reference should resolve", resolved);
+        NedNetworkheader header = assertInstanceOf(resolved, NedNetworkheader.class);
+        assertEquals("TestNet", header.getName());
+    }
+
+    /**
+     * Test that a channel type reference in a connection specification
+     * resolves to a channel declaration in a separate file.
+     *
+     * <p>Channels take a separate code path through
+     * {@code NedDeclarationSearch.findChannelType} rather than
+     * {@code findModuleType}, so this case exercises behaviour that the
+     * simple/compound/network cases above do not reach.</p>
+     */
+    public void testCrossFileChannelReference() {
+        // 1. Add a NED file with a channel declaration
+        myFixture.addFileToProject("channels/MyChannel.ned",
+                "channel MyChannel {\n" +
+                        "}\n");
+
+        // 2. Configure a file that references the channel in a connection
+        myFixture.configureByText(NedFileType.INSTANCE,
+                "simple Src { gates: output out; }\n" +
+                        "simple Snk { gates: input in; }\n" +
+                        "\n" +
+                        "network TestNetwork {\n" +
+                        "    submodules:\n" +
+                        "        s: Src;\n" +
+                        "        d: Snk;\n" +
+                        "    connections:\n" +
+                        "        s.out --> My<caret>Channel --> d.in;\n" +
+                        "}\n");
+
+        // 3. Resolve
+        PsiReference reference = myFixture.getReferenceAtCaretPositionWithAssertion();
+        PsiElement resolved = reference.resolve();
+
+        // 4. Verify resolution target: presence, PSI type, and name
+        assertNotNull("Cross-file channel reference should resolve", resolved);
+        NedChannelheader header = assertInstanceOf(resolved, NedChannelheader.class);
+        assertEquals("MyChannel", header.getName());
     }
 
     /**

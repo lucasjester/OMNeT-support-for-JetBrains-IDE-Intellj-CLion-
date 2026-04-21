@@ -16,6 +16,8 @@ public class OmnetIniRunConfiguration extends RunConfigurationBase {
     public String  iniPath    = "";
     public String  configName = "";
     public String  simLibPath = "";   // override binary/library for this config only
+    public String  extraArgs = "";
+
 
     /**
      * Semicolon-separated extra NED paths for this run config.
@@ -48,6 +50,7 @@ public class OmnetIniRunConfiguration extends RunConfigurationBase {
     public void setNedPaths(@NotNull String paths)  { this.nedPaths   = paths; }
     public void setLibraries(@NotNull String libs)  { this.libraries  = libs; }
     public void setShowGui(boolean show)             { this.showGui    = show; }
+    public void setExtraArgs(@NotNull String args) { this.extraArgs = args; }
 
     // ── getters ──────────────────────────────────────────────────────────────
     public @NotNull String getIniPath()    { return iniPath    == null ? "" : iniPath; }
@@ -56,6 +59,8 @@ public class OmnetIniRunConfiguration extends RunConfigurationBase {
     public @NotNull String getNedPaths()   { return nedPaths   == null ? "" : nedPaths; }
     public @NotNull String getLibraries()  { return libraries  == null ? "" : libraries; }
     public boolean isShowGui()             { return showGui; }
+    public @NotNull String getExtraArgs() { return extraArgs == null ? "" : extraArgs; }
+
 
     // ── IntelliJ API ──────────────────────────────────────────────────────────
     @Override
@@ -79,6 +84,7 @@ public class OmnetIniRunConfiguration extends RunConfigurationBase {
         libraries  = JDOMExternalizerUtil.readField(element, "libraries",  "");
         String guiVal = JDOMExternalizerUtil.readField(element, "showGui", "true");
         showGui = !"false".equals(guiVal);
+        extraArgs = JDOMExternalizerUtil.readField(element, "extraArgs", "");
     }
 
     @Override
@@ -90,5 +96,6 @@ public class OmnetIniRunConfiguration extends RunConfigurationBase {
         JDOMExternalizerUtil.writeField(element, "nedPaths",   nedPaths   == null ? "" : nedPaths);
         JDOMExternalizerUtil.writeField(element, "libraries",  libraries  == null ? "" : libraries);
         JDOMExternalizerUtil.writeField(element, "showGui",    String.valueOf(showGui));
+        JDOMExternalizerUtil.writeField(element, "extraArgs", extraArgs == null ? "" : extraArgs);
     }
 }

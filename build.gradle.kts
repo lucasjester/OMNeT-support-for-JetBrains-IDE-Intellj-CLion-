@@ -73,12 +73,7 @@ tasks {
     withType<JavaCompile> {
         sourceCompatibility = "21"
         targetCompatibility = "21"
-    //}
-    //named("compileKotlin") {
-        //enabled = false
-    //}
-    //named("compileTestKotlin") {
-        //enabled = false
+
     }
     test {
         systemProperty("idea.home.path", intellijPlatform.sandboxContainer.get().toString())

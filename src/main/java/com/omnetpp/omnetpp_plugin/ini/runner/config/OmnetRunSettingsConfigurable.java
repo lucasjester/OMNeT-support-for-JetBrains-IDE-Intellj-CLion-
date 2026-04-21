@@ -11,7 +11,6 @@ public class OmnetRunSettingsConfigurable implements Configurable {
 
     private JTextField  oppRunPathField;
     private JTextField  simLibPathField;
-    private JTextArea   commonArgsArea;
     private JTextArea   nedPathsArea;
     private JTextArea   librariesArea;
     private JPanel      panel;
@@ -35,7 +34,7 @@ public class OmnetRunSettingsConfigurable implements Configurable {
         top.add(simLibPathField);
 
         // ── center: multi-line text areas ────────────────────────────────────
-        JPanel center = new JPanel(new GridLayout(3, 1, 0, 10));
+        JPanel center = new JPanel(new GridLayout(2, 1, 0, 10));
 
         // NED paths
         nedPathsArea = new JTextArea(4, 60);
@@ -59,14 +58,6 @@ public class OmnetRunSettingsConfigurable implements Configurable {
         libPanel.add(new JScrollPane(librariesArea), BorderLayout.CENTER);
         center.add(libPanel);
 
-        // Common args
-        commonArgsArea = new JTextArea(3, 60);
-        commonArgsArea.setLineWrap(true);
-        commonArgsArea.setWrapStyleWord(true);
-        JPanel argsPanel = new JPanel(new BorderLayout(4, 4));
-        argsPanel.add(new JLabel("Additional opp_run arguments (appended verbatim):"), BorderLayout.NORTH);
-        argsPanel.add(new JScrollPane(commonArgsArea), BorderLayout.CENTER);
-        center.add(argsPanel);
 
         panel.add(top,    BorderLayout.NORTH);
         panel.add(center, BorderLayout.CENTER);
@@ -81,8 +72,7 @@ public class OmnetRunSettingsConfigurable implements Configurable {
         return !oppRunPathField.getText().trim().equals(s.getOppRunPath())
                 || !simLibPathField.getText().trim().equals(s.getSimLibPath())
                 || !nedPathsArea.getText().equals(s.getNedPaths())
-                || !librariesArea.getText().equals(s.getLibraries())
-                || !commonArgsArea.getText().equals(s.getCommonArgs());
+                || !librariesArea.getText().equals(s.getLibraries());
     }
 
     @Override
@@ -92,7 +82,6 @@ public class OmnetRunSettingsConfigurable implements Configurable {
         s.setSimLibPath(simLibPathField.getText().trim());
         s.setNedPaths(nedPathsArea.getText());
         s.setLibraries(librariesArea.getText());
-        s.setCommonArgs(commonArgsArea.getText());
     }
 
     @Override
@@ -102,7 +91,6 @@ public class OmnetRunSettingsConfigurable implements Configurable {
         simLibPathField.setText(s.getSimLibPath());
         nedPathsArea.setText(s.getNedPaths());
         librariesArea.setText(s.getLibraries());
-        commonArgsArea.setText(s.getCommonArgs());
     }
 
     @Override
@@ -112,6 +100,5 @@ public class OmnetRunSettingsConfigurable implements Configurable {
         simLibPathField = null;
         nedPathsArea  = null;
         librariesArea = null;
-        commonArgsArea = null;
     }
 }

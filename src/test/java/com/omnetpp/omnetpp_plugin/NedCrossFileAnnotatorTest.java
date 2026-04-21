@@ -53,10 +53,53 @@ public class NedCrossFileAnnotatorTest extends BasePlatformTestCase {
     }
 
     /**
-     * Test that multiple cross-file references all resolve without errors.
+     * Test that a module's {@code extends} clause referencing a base declared
+     * in another file is NOT marked as an error, while a non-existent parent
+     * type IS marked.
+     *
+     * <p>Without this test, the cross-file path for extends clauses relies on
+     * the same {@link com.omnetpp.omnetpp_plugin.ned.references.NedDeclarationSearch}
+     * infrastructure as submodule type references but is never exercised. A
+     * false positive here would mean every inheritance hierarchy spread across
+     * files shows a red underline on every derived module.</p>
      */
-    public void testMultipleCrossFileReferencesNoErrors() {
-        // Add two separate NED files with declarations
+    public void testCrossFileExtendsResolution() {
+        // Base type declared in a separate file
+        myFixture.addFileToProject("modules/Base.ned",
+                "simple Base {\n" +
+                        "    gates:\n" +
+                        "        input in;\n" +
+                        "        output out;\n" +
+                        "}\n");
+
+        // Two declarations:
+        //   GoodChild extends Base        → NO error (cross-file resolution works)
+        //   BadChild  extends TrulyMissing → error (genuinely unresolved)
+        myFixture.configureByText("Derived.ned",
+                "simple GoodChild extends Base {\n" +
+                        "}\n" +
+                        "\n" +
+                        "simple BadChild extends " +
+                        "<error descr=\"Unresolved module type 'TrulyMissing'\">TrulyMissing</error> {\n" +
+                        "}\n");
+
+        myFixture.checkHighlighting(false, false, true);
+    }
+
+    /**
+     * Test that submodule names inherited from a parent network declared in
+     * another file are resolved correctly when referenced from the child
+     * network's {@code connections:} section. Also verifies that a submodule
+     * name absent from the entire extends chain is still flagged as an error.
+     *
+     * <p>Without this test, the extends-chain traversal in
+     * {@code NedAnnotator.collectAllSubmoduleNames} is never exercised across
+     * file boundaries. A false positive here would mean every network that
+     * inherits submodules from a parent declared in another file shows red
+     * underlines on every inherited submodule name used in connections.</p>
+     */
+    public void testInheritedSubmodulesFromParentFile() {
+        // Module types referenced by the parent network
         myFixture.addFileToProject("modules/Source.ned",
                 "simple Source {\n" +
                         "    gates:\n" +
@@ -69,14 +112,25 @@ public class NedCrossFileAnnotatorTest extends BasePlatformTestCase {
                         "        input in;\n" +
                         "}\n");
 
-        // Both references should resolve — no errors expected
-        myFixture.configureByText("Pipeline.ned",
-                "network Pipeline {\n" +
+        // Parent network declared in a separate file with submodules src and snk
+        myFixture.addFileToProject("networks/ParentNetwork.ned",
+                "network ParentNetwork {\n" +
                         "    submodules:\n" +
                         "        src: Source;\n" +
                         "        snk: Sink;\n" +
+                        "}\n");
+
+        // Child network extends the parent and references its submodules in
+        // connections. The child declares no submodules of its own, so the
+        // annotator must resolve src and snk via the extends chain across
+        // file boundaries.
+        //   src, snk  → NO error (inherited from ParentNetwork)
+        //   ghost     → error (not declared anywhere in the extends chain)
+        myFixture.configureByText("ChildNetwork.ned",
+                "network ChildNetwork extends ParentNetwork {\n" +
                         "    connections:\n" +
                         "        src.out --> snk.in;\n" +
+                        "        <error descr=\"Unknown submodule 'ghost'\">ghost</error>.out --> snk.in;\n" +
                         "}\n");
 
         myFixture.checkHighlighting(false, false, true);
