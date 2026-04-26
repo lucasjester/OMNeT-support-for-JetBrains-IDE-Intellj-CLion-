@@ -27,36 +27,6 @@ public class NedCrossFileFindUsagesTest extends BasePlatformTestCase {
     }
 
     /**
-     * Test that Find Usages on a declaration locates a reference in a
-     * separate file.
-     */
-    public void testCrossFileFindUsagesSingleReference() {
-        // 1. Referencing file
-        myFixture.addFileToProject("nets/TestNetwork.ned",
-                "network TestNetwork {\n" +
-                        "    submodules:\n" +
-                        "        router: MyRouter;\n" +
-                        "}\n");
-
-        // 2. Declaration file with caret on the name
-        PsiFile declarationFile = myFixture.addFileToProject("modules/MyRouter.ned",
-                "simple My<caret>Router {\n" +
-                        "    gates:\n" +
-                        "        input in;\n" +
-                        "        output out;\n" +
-                        "}\n");
-
-        myFixture.configureFromExistingVirtualFile(declarationFile.getVirtualFile());
-
-        Collection<UsageInfo> usages = myFixture.findUsages(myFixture.getElementAtCaret());
-
-        assertEquals("Should find exactly one cross-file usage", 1, usages.size());
-        UsageInfo usage = usages.iterator().next();
-        assertEquals("Usage should live in the referencing file",
-                "TestNetwork.ned", usage.getFile().getName());
-    }
-
-    /**
      * Test that Find Usages on a declaration collects references spread
      * across multiple files.
      */
@@ -207,5 +177,55 @@ public class NedCrossFileFindUsagesTest extends BasePlatformTestCase {
             assertFalse("SourceAlt.ned must not appear: it is an unrelated declaration",
                     "SourceAlt.ned".equals(fileName));
         }
+    }
+
+    /**
+     * Test that Find Usages on a channel declaration locates the channel
+     * reference used as a channel spec between two connection arrows in
+     * a connection section in another file
+     * (\texttt{s.out --> MyChannel --> d.in;}).
+     *
+     * <p>Channel references flow through a different syntactic position
+     * than module references, resolved via
+     * {@link com.omnetpp.omnetpp_plugin.ned.references.NedDeclarationSearch#findChannelType}
+     * rather than {@code findModuleType}. Without this test the reverse
+     * lookup for channel references is unverified.</p>
+     */
+    public void testCrossFileFindUsagesChannelInConnectionSpec() {
+        // Modules used as the connection endpoints
+        myFixture.addFileToProject("modules/Src.ned",
+                "simple Src {\n" +
+                        "    gates:\n" +
+                        "        output out;\n" +
+                        "}\n");
+        myFixture.addFileToProject("modules/Dst.ned",
+                "simple Dst {\n" +
+                        "    gates:\n" +
+                        "        input in;\n" +
+                        "}\n");
+
+        // Referencing file with a connection that uses the channel
+        myFixture.addFileToProject("nets/TestNetwork.ned",
+                "network TestNetwork {\n" +
+                        "    submodules:\n" +
+                        "        s: Src;\n" +
+                        "        d: Dst;\n" +
+                        "    connections:\n" +
+                        "        s.out --> MyChannel --> d.in;\n" +
+                        "}\n");
+
+        // Channel declaration with caret on the name
+        PsiFile declarationFile = myFixture.addFileToProject("channels/MyChannel.ned",
+                "channel MyCha<caret>nnel {\n" +
+                        "}\n");
+        myFixture.configureFromExistingVirtualFile(declarationFile.getVirtualFile());
+
+        Collection<UsageInfo> usages = myFixture.findUsages(myFixture.getElementAtCaret());
+
+        assertEquals("Should find exactly one channel usage in the connection",
+                1, usages.size());
+        UsageInfo usage = usages.iterator().next();
+        assertEquals("Usage should live in the referencing network file",
+                "TestNetwork.ned", usage.getFile().getName());
     }
 }

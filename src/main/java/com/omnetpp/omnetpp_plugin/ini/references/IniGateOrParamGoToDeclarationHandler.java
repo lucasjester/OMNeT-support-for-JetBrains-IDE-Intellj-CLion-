@@ -4,19 +4,14 @@ import com.intellij.codeInsight.navigation.actions.GotoDeclarationHandler;
 import com.intellij.openapi.application.ReadAction;
 import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.project.Project;
-import com.intellij.openapi.vfs.LocalFileSystem;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiFile;
 import com.intellij.psi.PsiManager;
-import com.intellij.psi.search.FileTypeIndex;
-import com.intellij.psi.search.GlobalSearchScope;
 import com.intellij.psi.util.CachedValueProvider;
 import com.intellij.psi.util.CachedValuesManager;
 import com.intellij.psi.util.PsiTreeUtil;
 import com.omnetpp.omnetpp_plugin.ini.psi.IniTypes;
-import com.omnetpp.omnetpp_plugin.ini.runner.config.OmnetRunSettings;
-import com.omnetpp.omnetpp_plugin.ned.NedFileType;
 import com.omnetpp.omnetpp_plugin.ned.psi.NedFile;
 import com.omnetpp.omnetpp_plugin.ned.psi.NedGate;
 import com.omnetpp.omnetpp_plugin.ned.psi.NedGateTypenamesize;
@@ -25,14 +20,12 @@ import com.omnetpp.omnetpp_plugin.ned.psi.NedParam;
 import com.omnetpp.omnetpp_plugin.ned.psi.NedParamTypename;
 import com.omnetpp.omnetpp_plugin.ned.psi.NedParamTypenamevalue;
 import com.omnetpp.omnetpp_plugin.ned.psi.NedTypes;
+import com.omnetpp.omnetpp_plugin.ned.references.NedDeclarationSearch;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -98,7 +91,7 @@ public class IniGateOrParamGoToDeclarationHandler implements GotoDeclarationHand
         Project project = sourceElement.getProject();
         List<PsiElement> results = new ArrayList<>();
 
-        for (VirtualFile vf : collectAllNedFiles(project)) {
+        for (VirtualFile vf : NedDeclarationSearch.collectAllNedFiles(project)) {
             searchInFile(project, vf, memberName, results);
         }
 
@@ -263,54 +256,6 @@ public class IniGateOrParamGoToDeclarationHandler implements GotoDeclarationHand
         return decl;
     }
 
-    // ════════════════════════════════════════════════════════════════════════
-    // File collection
-    // ════════════════════════════════════════════════════════════════════════
-
-    @NotNull
-    private static Collection<VirtualFile> collectAllNedFiles(@NotNull Project project) {
-        Set<VirtualFile> result = new LinkedHashSet<>();
-
-        // (a) Indexed files (project + libraries)
-        try {
-            Collection<VirtualFile> indexed = ReadAction.compute(() ->
-                    FileTypeIndex.getFiles(NedFileType.INSTANCE, GlobalSearchScope.allScope(project)));
-            result.addAll(indexed);
-        } catch (Exception ignored) {}
-
-        // (b) Configured NED paths (covers INET-as-folder setups)
-        String nedPaths = OmnetRunSettings.getInstance().getNedPaths();
-        if (nedPaths != null && !nedPaths.isBlank()) {
-            for (String pathStr : splitSemicolon(nedPaths)) {
-                VirtualFile dir = LocalFileSystem.getInstance().findFileByPath(pathStr);
-                if (dir != null && dir.isDirectory()) {
-                    collectNedFilesRecursively(dir, result);
-                }
-            }
-        }
-
-        return result;
-    }
-
-    private static void collectNedFilesRecursively(@NotNull VirtualFile dir,
-                                                   @NotNull Set<VirtualFile> result) {
-        for (VirtualFile child : dir.getChildren()) {
-            if (child.isDirectory()) {
-                collectNedFilesRecursively(child, result);
-            } else if ("ned".equals(child.getExtension())) {
-                result.add(child);
-            }
-        }
-    }
-
-    @NotNull
-    private static List<String> splitSemicolon(@Nullable String s) {
-        if (s == null || s.isBlank()) return Collections.emptyList();
-        List<String> out = new ArrayList<>();
-        for (String part : s.split(";")) {
-            String t = part.trim();
-            if (!t.isEmpty()) out.add(t);
-        }
-        return out;
-    }
+    // File enumeration lives on NedDeclarationSearch.collectAllNedFiles
+    // and is shared between this handler and the main reference resolver.
 }

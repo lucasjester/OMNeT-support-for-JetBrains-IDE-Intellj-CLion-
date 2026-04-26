@@ -110,7 +110,10 @@ public class NedSyntaxHighlighter extends SyntaxHighlighterBase {
                 NedTypes.PARENT,
                 NedTypes.EXISTS,
                 NedTypes.SIZEOF,
-                NedTypes.TYPENAME
+                NedTypes.TYPENAME,
+                NedTypes.INDEX,
+                NedTypes.OBJECTDEF,
+                NedTypes.XMLDOC
         };
         for (IElementType k : keywords) {
             KEYS.put(k, KEYWORD);
@@ -165,7 +168,15 @@ public class NedSyntaxHighlighter extends SyntaxHighlighterBase {
                 NedTypes.LARROW,
                 NedTypes.BIARROW,
                 NedTypes.DOTDOT,
-                NedTypes.AT
+                NedTypes.AT,
+                NedTypes.LAND,
+                NedTypes.LOR,
+                NedTypes.LTGT,
+                NedTypes.EQSQ,
+                NedTypes.DHT,
+                NedTypes.QUESTION,
+                NedTypes.COLONCOLON,
+                NedTypes.DOLLAR
         };
         for (IElementType o : ops) {
             KEYS.put(o, OPERATOR);

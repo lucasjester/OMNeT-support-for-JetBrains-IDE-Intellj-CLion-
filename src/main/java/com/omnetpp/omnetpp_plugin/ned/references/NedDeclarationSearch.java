@@ -251,10 +251,14 @@ public final class NedDeclarationSearch {
 
     // ═════════════════════════════════════════════════════════════════════════
     // File collection
+    //
+    // Exposed to other lookup infrastructure (e.g. the INI
+    // parameter/gate handler) so the file-enumeration logic is not
+    // duplicated across the plugin.
     // ═════════════════════════════════════════════════════════════════════════
 
     @NotNull
-    private static Collection<VirtualFile> collectAllNedFiles(@NotNull Project project) {
+    public static Collection<VirtualFile> collectAllNedFiles(@NotNull Project project) {
         Set<VirtualFile> result = new LinkedHashSet<>();
 
         try {

@@ -50,7 +50,7 @@ SECTION         = \[ [A-Za-z] [^\]\r\n]* \]
 // ── FIX 5: Added { } segments for inline iteration ranges in keys ─────
 KEY             = [A-Za-z0-9_\-\*\.\?:\$]+ ( ( \[ [^\]\r\n]* \] | \{ [^}\r\n]* \} ) [A-Za-z0-9_\-\*\.\?:\$]* )*
 
-EQ              = [=:]
+EQ              = =
 
 // ── Numbers: with optional scientific notation and unit suffix ────────
 NUMBER          = [0-9]+ (\.[0-9]+)? ([eE][\+\-]?[0-9]+)? [A-Za-z%]*

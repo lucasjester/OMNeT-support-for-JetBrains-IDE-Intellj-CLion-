@@ -15,4 +15,12 @@ public class OmnetIniRunConfigurationFactory extends ConfigurationFactory {
     public @NotNull RunConfiguration createTemplateConfiguration(@NotNull Project project) {
         return new OmnetIniRunConfiguration(project, this, "OMNeT++ INI");
     }
+
+    @Override
+    public @NotNull String getId() {
+        // Stable, non-localised identifier the platform uses to key
+        // configuration templates. Must not depend on getName(), which may
+        // be translated.
+        return "OmnetIniRunConfigurationFactory";
+    }
 }

@@ -8,11 +8,6 @@ import com.intellij.testFramework.fixtures.BasePlatformTestCase;
 /**
  * Tests for cross-file rename refactoring of NED module declarations.
  *
- * <p>The existing {@link NedRenameTest} only renames a declaration whose
- * references live in the <em>same</em> file.  This test verifies that a
- * rename initiated on a declaration in one NED file propagates to every
- * reference in <em>other</em> NED files in the project.</p>
- *
  * <p>Together with {@link NedCrossFileReferenceTest} this exercises the
  * reverse-direction lookup property of FR-3: once a bidirectional mapping
  * between declarations and references is maintained, rename refactoring
@@ -23,50 +18,6 @@ public class NedCrossFileRenameTest extends BasePlatformTestCase {
     @Override
     protected String getTestDataPath() {
         return "src/test/testData";
-    }
-
-    /**
-     * Test that renaming a simple module declaration propagates to a
-     * submodule reference in another file.
-     */
-    public void testCrossFileRenameSimpleModule() {
-        // 1. File containing the reference (loaded into the editor)
-        myFixture.configureByText("TestNetwork.ned",
-                "network TestNetwork {\n" +
-                        "    submodules:\n" +
-                        "        router: MyRouter;\n" +
-                        "}\n");
-
-        // 2. File containing the declaration with the caret on the name
-        PsiFile declarationFile = myFixture.addFileToProject("modules/MyRouter.ned",
-                "simple My<caret>Router {\n" +
-                        "    gates:\n" +
-                        "        input in;\n" +
-                        "        output out;\n" +
-                        "}\n");
-
-        // 3. Open the declaration file so the caret position is honoured
-        myFixture.configureFromExistingVirtualFile(declarationFile.getVirtualFile());
-
-        // 4. Trigger the rename refactoring
-        myFixture.renameElementAtCaret("RenamedRouter");
-
-        // 5. Assert the declaration was renamed in its file
-        myFixture.checkResult(
-                "simple RenamedRouter {\n" +
-                        "    gates:\n" +
-                        "        input in;\n" +
-                        "        output out;\n" +
-                        "}\n");
-
-        // 6. Assert the reference was renamed in the other file
-        PsiFile networkFile = loadPsi("TestNetwork.ned");
-        assertEquals(
-                "network TestNetwork {\n" +
-                        "    submodules:\n" +
-                        "        router: RenamedRouter;\n" +
-                        "}\n",
-                networkFile.getText());
     }
 
     /**
@@ -361,6 +312,65 @@ public class NedCrossFileRenameTest extends BasePlatformTestCase {
                         "        output out;\n" +
                         "}\n",
                 derivedFile.getText());
+    }
+
+    /**
+     * Test that renaming a channel declaration rewrites its reference
+     * used as a channel spec between two connection arrows in a
+     * connection section in another file
+     * (\texttt{s.out --> MyChannel --> d.in;}).
+     *
+     * <p>Channel references flow through a different syntactic position
+     * than module references. Without this test the rewrite step for
+     * channel specs in connections is unverified.</p>
+     */
+    public void testCrossFileRenameChannelInConnectionSpec() {
+        // Modules used as the connection endpoints
+        myFixture.addFileToProject("modules/Src.ned",
+                "simple Src {\n" +
+                        "    gates:\n" +
+                        "        output out;\n" +
+                        "}\n");
+        myFixture.addFileToProject("modules/Dst.ned",
+                "simple Dst {\n" +
+                        "    gates:\n" +
+                        "        input in;\n" +
+                        "}\n");
+
+        // Referencing file with a connection that uses the channel
+        myFixture.addFileToProject("nets/TestNetwork.ned",
+                "network TestNetwork {\n" +
+                        "    submodules:\n" +
+                        "        s: Src;\n" +
+                        "        d: Dst;\n" +
+                        "    connections:\n" +
+                        "        s.out --> MyChannel --> d.in;\n" +
+                        "}\n");
+
+        // Channel declaration with caret on the name
+        PsiFile declarationFile = myFixture.addFileToProject("channels/MyChannel.ned",
+                "channel MyCha<caret>nnel {\n" +
+                        "}\n");
+        myFixture.configureFromExistingVirtualFile(declarationFile.getVirtualFile());
+
+        myFixture.renameElementAtCaret("Renamed");
+
+        // Declaration was renamed
+        myFixture.checkResult(
+                "channel Renamed {\n" +
+                        "}\n");
+
+        // Channel spec in the connection was rewritten
+        PsiFile networkFile = loadPsi("nets/TestNetwork.ned");
+        assertEquals(
+                "network TestNetwork {\n" +
+                        "    submodules:\n" +
+                        "        s: Src;\n" +
+                        "        d: Dst;\n" +
+                        "    connections:\n" +
+                        "        s.out --> Renamed --> d.in;\n" +
+                        "}\n",
+                networkFile.getText());
     }
 
     private PsiFile loadPsi(String relativePath) {

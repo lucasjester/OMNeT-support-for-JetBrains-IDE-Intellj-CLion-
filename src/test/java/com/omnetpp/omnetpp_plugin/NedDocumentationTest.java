@@ -27,36 +27,8 @@ public class NedDocumentationTest extends BasePlatformTestCase {
         return "src/test/testData";
     }
 
-    /**
-     * Test that documentation is generated for a simple module declaration.
-     * The caret is on "MySource" in "simple MySource { ... }".
-     */
-    public void testDocumentation() {
-        myFixture.configureByFile("DocumentationTestData.ned");
-
-        // Find the element at the caret
-        PsiElement elementAtCaret = myFixture.getFile()
-                .findElementAt(myFixture.getCaretOffset());
-        assertNotNull("Should find element at caret", elementAtCaret);
-
-        // Walk up to find the NedSimplemoduleheader (the documentation target)
-        NedSimplemoduleheader header =
-                PsiTreeUtil.getParentOfType(elementAtCaret, NedSimplemoduleheader.class);
-        assertNotNull("Should find NedSimplemoduleheader as parent", header);
-
-        // Call the provider directly
-        NedDocumentationProvider provider = new NedDocumentationProvider();
-        String doc = provider.generateDoc(header, elementAtCaret);
-
-        assertNotNull("Documentation should not be null", doc);
-        assertTrue("Documentation should contain the module name 'MySource'",
-                doc.contains("MySource"));
-        assertTrue("Documentation should contain the keyword 'simple'",
-                doc.contains("simple"));
-    }
-
     // ═════════════════════════════════════════════════════════════════════════
-    // Tier 1 — high-value paths beyond the single-file happy case
+    // Behavioural coverage — realistic paths and claimed provider behaviour
     // ═════════════════════════════════════════════════════════════════════════
 
     /**

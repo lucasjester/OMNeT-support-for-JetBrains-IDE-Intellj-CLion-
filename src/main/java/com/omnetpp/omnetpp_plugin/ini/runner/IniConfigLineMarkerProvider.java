@@ -84,10 +84,13 @@ public class IniConfigLineMarkerProvider implements LineMarkerProvider {
         popup.showInFocusCenter();
     }
 
-    private RunnerAndConfigurationSettings findOrCreateSettings(@NotNull Project project,
-                                                                @NotNull String iniPath,
-                                                                @NotNull String configName,
-                                                                @NotNull String iniFileName) {
+    // Package-visible for IniConfigLineMarkerProviderClickTest: lets the test
+    // drive the create-or-reuse decision the gutter click performs without
+    // going through Swing event dispatch. Not part of the public API.
+    RunnerAndConfigurationSettings findOrCreateSettings(@NotNull Project project,
+                                                        @NotNull String iniPath,
+                                                        @NotNull String configName,
+                                                        @NotNull String iniFileName) {
 
         RunManager rm = RunManager.getInstance(project);
 
