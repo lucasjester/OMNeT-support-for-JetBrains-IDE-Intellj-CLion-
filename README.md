@@ -9,22 +9,21 @@ JetBrains IDE plugin that adds NED and INI language support and OMNeT++ run conf
 
 The Gradle wrapper (`./gradlew`) downloads everything else.
 
-## Install the plugin (end users)
+## Quick start
 
-1. Download the latest plugin ZIP from this repository's **Releases** page.
-2. In IntelliJ IDEA or CLion, open `Settings (or Preferences) → Plugins → ⚙ (gear icon) → Install Plugin from Disk...`, select the ZIP and restart the IDE.
+1. Clone and build the plugin ZIP:
+   ```bash
+   git clone https://github.com/lucasjester/omnetpp_plugin.git
+   cd omnetpp_plugin
+   ./gradlew buildPlugin
+   ```
+   The installable ZIP is written to `build/distributions/`.
 
-After restart the plugin is active. Open any `.ned` or `.ini` file and you should see syntax highlighting, navigation, find usages, rename and run-configuration support.
+2. Install the ZIP in IntelliJ IDEA or CLion: `Settings → Plugins → ⚙ → Install Plugin from Disk...`, pick the ZIP, restart the IDE.
 
-## Build the plugin from source
+3. Open your OMNeT++ project folder in the IDE (`File → Open...`). `.ned` and `.ini` files now get syntax highlighting, navigation, find usages and rename.
 
-If you want to rebuild the plugin yourself from this source tree:
-
-```bash
-./gradlew buildPlugin
-```
-
-The installable ZIP is written to `build/distributions/<plugin-name>-<version>.zip`. Install it via the same "Install Plugin from Disk" path described above.
+4. To run a simulation, create an `OMNeT++ Simulation` run configuration from `Run → Edit Configurations`. macOS users: read the `opp_run` wrapper section below first.
 
 ## Develop the plugin (developer workflow)
 
