@@ -22,7 +22,6 @@ public class OmnetRunSettingsConfigurable implements Configurable {
     public @Nullable JComponent createComponent() {
         panel = new JPanel(new BorderLayout(10, 10));
 
-        // ── top: single-line fields ──────────────────────────────────────────
         JPanel top = new JPanel(new GridLayout(2, 2, 6, 6));
 
         top.add(new JLabel("Path to opp_run:"));
@@ -33,10 +32,8 @@ public class OmnetRunSettingsConfigurable implements Configurable {
         simLibPathField = new JTextField();
         top.add(simLibPathField);
 
-        // ── center: multi-line text areas ────────────────────────────────────
         JPanel center = new JPanel(new GridLayout(2, 1, 0, 10));
 
-        // NED paths
         nedPathsArea = new JTextArea(4, 60);
         nedPathsArea.setLineWrap(true);
         nedPathsArea.setWrapStyleWord(false);
@@ -47,7 +44,6 @@ public class OmnetRunSettingsConfigurable implements Configurable {
         nedPanel.add(new JScrollPane(nedPathsArea), BorderLayout.CENTER);
         center.add(nedPanel);
 
-        // Libraries
         librariesArea = new JTextArea(3, 60);
         librariesArea.setLineWrap(true);
         librariesArea.setWrapStyleWord(false);

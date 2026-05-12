@@ -65,8 +65,6 @@ public class IniOmnetppParsingCoverageTest extends ParsingTestCase {
         super("", "ini", new IniParserDefinition());
     }
 
-    // ── ParsingTestCase boilerplate ────────────────────────────────────────
-
     @Override
     protected String getTestDataPath() {
         return "src/test/testData";
@@ -77,9 +75,6 @@ public class IniOmnetppParsingCoverageTest extends ParsingTestCase {
         return false;
     }
 
-    // ── Helper types ───────────────────────────────────────────────────────
-
-    /** Holds the result of parsing a single INI file. */
     private static class FileParseResult {
         final Path   filePath;
         final int    errorCount;
@@ -96,12 +91,6 @@ public class IniOmnetppParsingCoverageTest extends ParsingTestCase {
         }
     }
 
-    // ── The actual test ────────────────────────────────────────────────────
-
-    /**
-     * Iterates over every {@code .ini} file under the configured OMNeT++
-     * root, parses it, and collects coverage statistics.
-     */
     public void testOmnetppIniParsingCoverage() throws IOException {
         String omnetppPath = System.getProperty(OMNETPP_PATH_PROPERTY);
 
@@ -171,24 +160,8 @@ public class IniOmnetppParsingCoverageTest extends ParsingTestCase {
         }
 
         System.out.println();
-
-        // ── Optional: enforce a minimum coverage threshold ─────────────
-        // Uncomment and adjust the threshold as your grammar improves.
-        //
-        // double minCoverage = 90.0;
-        // assertTrue(
-        //     String.format("Grammar coverage %.1f%% is below threshold %.1f%%",
-        //                   pctOk, minCoverage),
-        //     pctOk >= minCoverage
-        // );
     }
 
-    // ── Per-file parsing logic ─────────────────────────────────────────────
-
-    /**
-     * Reads a single {@code .ini} file, creates a PSI tree via the plugin's
-     * parser, and counts the number of {@link PsiErrorElement} nodes.
-     */
     private FileParseResult parseAndCheck(Path iniFile, Path rootDir) {
         String content;
         try {

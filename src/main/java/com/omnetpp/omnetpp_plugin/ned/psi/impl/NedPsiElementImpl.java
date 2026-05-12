@@ -15,7 +15,6 @@ public class NedPsiElementImpl extends ASTWrapperPsiElement implements Contribut
 
     @Override
     public PsiReference @NotNull [] getReferences() {
-        // This is the key: it triggers loading PsiReferenceContributor providers. :contentReference[oaicite:1]{index=1}
         return PsiReferenceService.getService().getContributedReferences(this);
     }
 }

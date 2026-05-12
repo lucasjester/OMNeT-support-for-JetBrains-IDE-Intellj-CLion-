@@ -25,11 +25,6 @@ import org.jetbrains.annotations.NotNull;
  * {@code getReferences()} to the platform's reference contributors. If
  * the mixin extended {@code ASTWrapperPsiElement} directly, dottednames
  * would lose this routing and no references would ever be attached.</p>
- *
- * <p>The dispatch rule below mirrors what
- * {@code NedAnnotator.checkExtendsType} used to compute inline. Putting
- * it here ensures the contributor and the annotator can never disagree
- * on what role a given dottedname plays.</p>
  */
 public abstract class NedDottednameMixin extends NedPsiElementImpl implements NedReferenceContext {
 

@@ -56,8 +56,6 @@ public class IniInetParsingCoverageTest extends ParsingTestCase {
         super("", "ini", new IniParserDefinition());
     }
 
-    // ── ParsingTestCase boilerplate ────────────────────────────────────────
-
     @Override
     protected String getTestDataPath() {
         return "src/test/testData";
@@ -68,9 +66,6 @@ public class IniInetParsingCoverageTest extends ParsingTestCase {
         return false;
     }
 
-    // ── Helper types ───────────────────────────────────────────────────────
-
-    /** Holds the result of parsing a single INI file. */
     private static class FileParseResult {
         final Path   filePath;
         final int    errorCount;
@@ -87,12 +82,6 @@ public class IniInetParsingCoverageTest extends ParsingTestCase {
         }
     }
 
-    // ── The actual test ────────────────────────────────────────────────────
-
-    /**
-     * Iterates over every {@code .ini} file under the configured INET root,
-     * parses it, and collects coverage statistics.
-     */
     public void testInetIniParsingCoverage() throws IOException {
         String inetPath = System.getProperty(INET_PATH_PROPERTY);
 
@@ -163,12 +152,6 @@ public class IniInetParsingCoverageTest extends ParsingTestCase {
         System.out.println();
     }
 
-    // ── Per-file parsing logic ─────────────────────────────────────────────
-
-    /**
-     * Reads a single {@code .ini} file, creates a PSI tree via the plugin's
-     * parser, and counts the number of {@link PsiErrorElement} nodes.
-     */
     private FileParseResult parseAndCheck(Path iniFile, Path inetRoot) {
         String content;
         try {

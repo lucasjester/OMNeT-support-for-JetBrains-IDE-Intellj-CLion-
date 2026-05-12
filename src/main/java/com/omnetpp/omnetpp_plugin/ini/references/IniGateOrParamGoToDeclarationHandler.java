@@ -41,15 +41,6 @@ import java.util.Set;
  * on the file via {@link CachedValuesManager}. Lookups are HashMap reads.
  * Editing one NED file invalidates only that file's cache.</p>
  *
- * <p>The previous implementation used a regex pass over raw file bytes to
- * locate candidate offsets, then PSI navigation to convert offsets into
- * elements. That worked but had two drawbacks: the regex was incomplete
- * (e.g. parameters declared without an explicit type were missed) and the
- * raw-bytes scan duplicated work the parser had already done. After the
- * grammar matured to handle the full INET corpus, the regex path could be
- * removed in favor of a direct PSI walk — same approach used in
- * {@code NedDeclarationSearch}.</p>
- *
  * <p><b>Known limitation.</b> The handler returns every parameter or gate
  * declaration in the project that matches the simple name, regardless of
  * which module the INI key actually refers to. Module-path-aware
@@ -70,10 +61,6 @@ public class IniGateOrParamGoToDeclarationHandler implements GotoDeclarationHand
             "cmdenv-express-mode", "cmdenv-autoflush",
             "cmdenv-status-frequency", "ned-path"
     );
-
-    // ════════════════════════════════════════════════════════════════════════
-    // Entry point
-    // ════════════════════════════════════════════════════════════════════════
 
     @Override
     public PsiElement @Nullable [] getGotoDeclarationTargets(
@@ -112,10 +99,6 @@ public class IniGateOrParamGoToDeclarationHandler implements GotoDeclarationHand
         return candidate.isEmpty() ? null : candidate;
     }
 
-    // ════════════════════════════════════════════════════════════════════════
-    // Per-file PSI search via cached name → declaration maps
-    // ════════════════════════════════════════════════════════════════════════
-
     private static void searchInFile(@NotNull Project project,
                                      @NotNull VirtualFile vf,
                                      @NotNull String name,
@@ -147,13 +130,9 @@ public class IniGateOrParamGoToDeclarationHandler implements GotoDeclarationHand
         });
     }
 
-    // ════════════════════════════════════════════════════════════════════════
-    // Per-file cached indexes
-    //
     // Each NedFile maintains a cached map "name → list of declarations" via
     // CachedValuesManager. The file itself is the cache dependency, so any
     // PSI change to the file invalidates only that file's cache.
-    // ════════════════════════════════════════════════════════════════════════
 
     @NotNull
     private static Map<String, List<PsiElement>> getCachedParams(@NotNull NedFile file) {
@@ -230,15 +209,11 @@ public class IniGateOrParamGoToDeclarationHandler implements GotoDeclarationHand
         return nameNode == null ? null : nameNode.getText();
     }
 
-    // ════════════════════════════════════════════════════════════════════════
-    // Header walk-up
-    //
-    // For navigation, we want to return the enclosing module's header (so
-    // the popup shows "ModuleName (File.ned)"), not the param/gate node
-    // itself. The header is a SIBLING of the param block inside the
-    // definition node, not an ancestor — so at each ancestor level we scan
-    // direct children for a NedNamedElement and return the first one.
-    // ════════════════════════════════════════════════════════════════════════
+    // For navigation we want the enclosing module's header (so the popup
+    // shows "ModuleName (File.ned)"), not the param/gate node itself. The
+    // header is a SIBLING of the param block inside the definition node,
+    // not an ancestor, so at each ancestor level we scan direct children
+    // for a NedNamedElement and return the first one.
 
     @Nullable
     private static PsiElement findEnclosingHeader(@NotNull PsiElement decl) {
@@ -251,11 +226,6 @@ public class IniGateOrParamGoToDeclarationHandler implements GotoDeclarationHand
             }
             up = up.getParent();
         }
-        // Header not found (probably means decl is somehow at file root —
-        // shouldn't happen, but fall back to returning the declaration itself)
         return decl;
     }
-
-    // File enumeration lives on NedDeclarationSearch.collectAllNedFiles
-    // and is shared between this handler and the main reference resolver.
 }

@@ -11,17 +11,14 @@ import com.omnetpp.omnetpp_plugin.ned.psi.impl.NedElementFactory;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.List;
-
 /**
  * Common base for the two NED type references.
  *
  * <p>Subclasses differ only in which {@link NedDeclarationSearch} entry
- * point they call: {@code findModuleType}/{@code allModuleTypeNames} for
- * module kinds, {@code findChannelType}/{@code allChannelTypeNames} for
- * channel kinds. The {@link PsiReferenceBase} contract methods
- * ({@code resolve}, {@code getVariants}, {@code handleElementRename}) are
- * implemented once here and parameterised through two abstract hooks.</p>
+ * point they call: {@code findModuleType} for module kinds,
+ * {@code findChannelType} for channel kinds. The {@link PsiReferenceBase}
+ * contract methods ({@code resolve}, {@code handleElementRename}) are
+ * implemented once here and parameterised through one abstract hook.</p>
  */
 abstract class NedTypeReference extends PsiReferenceBase<PsiElement> {
 
@@ -33,8 +30,6 @@ abstract class NedTypeReference extends PsiReferenceBase<PsiElement> {
                                                    @NotNull PsiFile currentFile,
                                                    @NotNull String targetName);
 
-    protected abstract @NotNull List<String> allNames(@NotNull Project project);
-
     @Override
     public @Nullable PsiElement resolve() {
         String targetName = myElement.getText();
@@ -44,11 +39,6 @@ abstract class NedTypeReference extends PsiReferenceBase<PsiElement> {
         if (currentFile == null) return null;
 
         return search(myElement.getProject(), currentFile, targetName);
-    }
-
-    @Override
-    public Object @NotNull [] getVariants() {
-        return allNames(myElement.getProject()).toArray();
     }
 
     @Override

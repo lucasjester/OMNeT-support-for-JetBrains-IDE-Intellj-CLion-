@@ -15,7 +15,6 @@ import static com.intellij.openapi.editor.colors.TextAttributesKey.createTextAtt
 
 public class IniSyntaxHighlighter extends SyntaxHighlighterBase {
 
-    // ── Token colour keys ────────────────────────────────────────────────
     public static final TextAttributesKey SECTION =
             createTextAttributesKey("OMNET_INI_SECTION",  DefaultLanguageHighlighterColors.METADATA);
     public static final TextAttributesKey KEY =
@@ -35,7 +34,6 @@ public class IniSyntaxHighlighter extends SyntaxHighlighterBase {
     public static final TextAttributesKey BAD_CHAR =
             createTextAttributesKey("OMNET_INI_BAD_CHARACTER", HighlighterColors.BAD_CHARACTER);
 
-    // ── Existing value-level keys ────────────────────────────────────────
     public static final TextAttributesKey FUNC_CALL =
             createTextAttributesKey("OMNET_INI_FUNC_CALL", DefaultLanguageHighlighterColors.FUNCTION_CALL);
     public static final TextAttributesKey ARITH_OP =
@@ -49,7 +47,6 @@ public class IniSyntaxHighlighter extends SyntaxHighlighterBase {
     public static final TextAttributesKey COMMA =
             createTextAttributesKey("OMNET_INI_COMMA",     DefaultLanguageHighlighterColors.COMMA);
 
-    // ── NEW keys ─────────────────────────────────────────────────────────
     public static final TextAttributesKey INCLUDE =
             createTextAttributesKey("OMNET_INI_INCLUDE",   DefaultLanguageHighlighterColors.KEYWORD);
     public static final TextAttributesKey ITER_VAR =
@@ -57,7 +54,6 @@ public class IniSyntaxHighlighter extends SyntaxHighlighterBase {
     public static final TextAttributesKey PAREN =
             createTextAttributesKey("OMNET_INI_PAREN",     DefaultLanguageHighlighterColors.PARENTHESES);
 
-    // ── Key arrays ───────────────────────────────────────────────────────
     private static final TextAttributesKey[] SECTION_KEYS  = {SECTION};
     private static final TextAttributesKey[] KEY_KEYS      = {KEY};
     private static final TextAttributesKey[] EQ_KEYS       = {EQ};
@@ -76,6 +72,7 @@ public class IniSyntaxHighlighter extends SyntaxHighlighterBase {
     private static final TextAttributesKey[] INCLUDE_KEYS  = {INCLUDE};
     private static final TextAttributesKey[] ITER_VAR_KEYS = {ITER_VAR};
     private static final TextAttributesKey[] PAREN_KEYS    = {PAREN};
+    private static final TextAttributesKey[] WS_KEYS       = {HighlighterColors.TEXT};
     private static final TextAttributesKey[] EMPTY_KEYS    = {};
 
     @Override
@@ -100,11 +97,11 @@ public class IniSyntaxHighlighter extends SyntaxHighlighterBase {
         if (t == IniTypes.LBRACE)         return BRACE_KEYS;
         if (t == IniTypes.RBRACE)         return BRACE_KEYS;
         if (t == IniTypes.COMMA)          return COMMA_KEYS;
-        // ── NEW token mappings ───────────────────────────────────────
         if (t == IniTypes.INCLUDE)        return INCLUDE_KEYS;
         if (t == IniTypes.ITER_VAR)       return ITER_VAR_KEYS;
         if (t == IniTypes.LPAREN)         return PAREN_KEYS;
         if (t == IniTypes.RPAREN)         return PAREN_KEYS;
+        if (t == TokenType.WHITE_SPACE)   return WS_KEYS;
         return EMPTY_KEYS;
     }
 }

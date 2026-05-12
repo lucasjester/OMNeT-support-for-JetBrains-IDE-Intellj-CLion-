@@ -53,9 +53,7 @@ import java.util.stream.Stream;
  *
  * <p>The test itself does <strong>not</strong> fail via assertion — its
  * purpose is to measure grammar coverage, not to enforce 100&percnt;
- * compatibility.  Uncomment the threshold assertion at the bottom of
- * {@link #testOmnetppNedParsingCoverage()} if you want to enforce a
- * minimum coverage percentage.</p>
+ * compatibility.</p>
  */
 public class NedOmnetppParsingCoverageTest extends ParsingTestCase {
 
@@ -65,8 +63,6 @@ public class NedOmnetppParsingCoverageTest extends ParsingTestCase {
     public NedOmnetppParsingCoverageTest() {
         super("", "ned", new NedParserDefinition());
     }
-
-    // ── ParsingTestCase boilerplate ────────────────────────────────────────
 
     @Override
     protected String getTestDataPath() {
@@ -78,13 +74,10 @@ public class NedOmnetppParsingCoverageTest extends ParsingTestCase {
         return false;
     }
 
-    // ── Helper types ───────────────────────────────────────────────────────
-
-    /** Holds the result of parsing a single NED file. */
     private static class FileParseResult {
         final Path   filePath;
         final int    errorCount;
-        final String firstErrorMessage;   // null when errorCount == 0
+        final String firstErrorMessage;
 
         FileParseResult(Path filePath, int errorCount, String firstErrorMessage) {
             this.filePath          = filePath;
@@ -97,12 +90,6 @@ public class NedOmnetppParsingCoverageTest extends ParsingTestCase {
         }
     }
 
-    // ── The actual test ────────────────────────────────────────────────────
-
-    /**
-     * Iterates over every {@code .ned} file under the configured OMNeT++
-     * root, parses it, and collects coverage statistics.
-     */
     public void testOmnetppNedParsingCoverage() throws IOException {
         String omnetppPath = System.getProperty(OMNETPP_PATH_PROPERTY);
 
@@ -111,7 +98,7 @@ public class NedOmnetppParsingCoverageTest extends ParsingTestCase {
             System.out.println(" SKIPPED: NedOmnetppParsingCoverageTest");
             System.out.println(" Set -Domnetpp.path=/path/to/omnetpp-6.3.0 to run this test");
             System.out.println("=======================================================");
-            return;   // graceful skip — not a failure
+            return;
         }
 
         Path omnetppRoot = Path.of(omnetppPath);
@@ -169,24 +156,8 @@ public class NedOmnetppParsingCoverageTest extends ParsingTestCase {
         }
 
         System.out.println();
-
-        // ── Optional: enforce a minimum coverage threshold ─────────────
-        // Uncomment and adjust the threshold as your grammar improves.
-        //
-        // double minCoverage = 90.0;
-        // assertTrue(
-        //     String.format("Grammar coverage %.1f%% is below threshold %.1f%%",
-        //                   pctOk, minCoverage),
-        //     pctOk >= minCoverage
-        // );
     }
 
-    // ── Per-file parsing logic ─────────────────────────────────────────────
-
-    /**
-     * Reads a single {@code .ned} file, creates a PSI tree via the plugin's
-     * parser, and counts the number of {@link PsiErrorElement} nodes.
-     */
     private FileParseResult parseAndCheck(Path nedFile, Path rootDir) {
         String content;
         try {

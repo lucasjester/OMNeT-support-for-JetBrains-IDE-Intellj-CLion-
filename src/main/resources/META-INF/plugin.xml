@@ -8,7 +8,7 @@
 
     <extensions defaultExtensionNs="com.intellij">
 
-        <!-- ── NED ──────────────────────────────────────────────────────── -->
+        <!-- NED -->
         <fileType
                 name="NED File"
                 language="NED"
@@ -45,7 +45,7 @@
         <annotator language="NED"
                    implementationClass="com.omnetpp.omnetpp_plugin.ned.NedAnnotator"/>
 
-        <!-- ── INI ──────────────────────────────────────────────────────── -->
+        <!-- INI -->
         <fileType name="OMNeT++ INI"
                   language="OMNET_INI"
                   implementationClass="com.omnetpp.omnetpp_plugin.ini.IniFileType"
@@ -60,10 +60,11 @@
 
         <colorSettingsPage implementation="com.omnetpp.omnetpp_plugin.ini.highlighting.IniColorSettingsPage"/>
 
-        <!--
-            NEW: resolves  network = SomeNetwork  in .ini files
-                 to the matching  network SomeNetwork { }  in .ned files.
-        -->
+        <lang.commenter language="OMNET_INI"
+                        implementationClass="com.omnetpp.omnetpp_plugin.ini.IniCommenter"/>
+
+        <!-- Resolves "network = SomeNetwork" in .ini files to the matching
+             "network SomeNetwork { }" in .ned files. -->
         <gotoDeclarationHandler
                 implementation="com.omnetpp.omnetpp_plugin.ini.references.IniNetworkGoToDeclarationHandler"/>
 

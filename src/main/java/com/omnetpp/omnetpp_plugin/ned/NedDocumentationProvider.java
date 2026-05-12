@@ -16,18 +16,14 @@ public class NedDocumentationProvider extends AbstractDocumentationProvider {
 
     @Override
     public @Nullable @Nls String generateDoc(PsiElement element, @Nullable PsiElement originalElement) {
-        // We generate docs for named header elements (simple, module, network, channel)
         String keyword = getKeyword(element);
         String name = getName(element);
         if (keyword == null || name == null) return null;
 
         StringBuilder sb = new StringBuilder();
-
-        // ── Definition section ────────────────────────────────────────────
         sb.append(DocumentationMarkup.DEFINITION_START);
         sb.append(keyword).append(" <b>").append(name).append("</b>");
 
-        // Show "extends X" if present
         String extendsInfo = getExtendsInfo(element);
         if (extendsInfo != null) {
             sb.append(" extends ").append(extendsInfo);
@@ -35,7 +31,6 @@ public class NedDocumentationProvider extends AbstractDocumentationProvider {
 
         sb.append(DocumentationMarkup.DEFINITION_END);
 
-        // ── Content section: file location ────────────────────────────────
         String fileName = element.getContainingFile() != null
                 ? element.getContainingFile().getName() : null;
         if (fileName != null) {
@@ -44,7 +39,6 @@ public class NedDocumentationProvider extends AbstractDocumentationProvider {
             sb.append(DocumentationMarkup.CONTENT_END);
         }
 
-        // ── Sections: preceding comment as documentation ──────────────────
         String comment = findPrecedingComment(element);
         if (comment != null) {
             sb.append(DocumentationMarkup.SECTIONS_START);
@@ -78,8 +72,6 @@ public class NedDocumentationProvider extends AbstractDocumentationProvider {
         }
         return info + "  (" + fileName + ")";
     }
-
-    // ── Helpers ───────────────────────────────────────────────────────────
 
     @Nullable
     private static String getKeyword(PsiElement element) {
@@ -117,11 +109,10 @@ public class NedDocumentationProvider extends AbstractDocumentationProvider {
      * Finds the comment block immediately preceding this element (or its parent definition).
      */
     private static String findPrecedingComment(PsiElement element) {
-        // Go to the definition (parent of the header)
         PsiElement definition = element.getParent();
         if (definition == null) definition = element;
 
-        // Walk up to the topmost non-file parent so we're at the same
+        // Walk up to the topmost non-file parent so we are at the same
         // level where preceding comments attach in the PSI tree. The NED
         // grammar nests a simple-module declaration as
         // NedFile > NedDefinitions > NedDefinition > NedSimplemoduledefinition > NedSimplemoduleheader,

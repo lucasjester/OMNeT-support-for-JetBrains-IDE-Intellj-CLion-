@@ -73,7 +73,9 @@ public class IniColorSettingsPage implements ColorSettingsPage {
                 + "\n"
                 + "# Function calls and boolean\n"
                 + "**.hasStatus = true\n"
-                + "**.jitter = uniform(0.1ms, 0.5ms) + normal(0ms, 0.01ms)\n";
+                + "**.jitter = uniform(0.1ms, 0.5ms) + normal(0ms, 0.01ms)\n"
+                + "*.client*.bridging.streamIdentifier.identifier.mapping = [{stream: \"best-effort\", packetFilter: expr(udp.destPort == 1000)},\n" +
+                        "                                                          {stream: \"high-priority\", packetFilter: expr(udp.destPort == 1001)}]";
     }
 
     @Nullable

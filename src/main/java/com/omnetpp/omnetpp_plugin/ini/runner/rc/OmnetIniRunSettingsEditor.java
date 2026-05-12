@@ -43,7 +43,6 @@ public class OmnetIniRunSettingsEditor extends SettingsEditor<OmnetIniRunConfigu
     protected @NotNull JComponent createEditor() {
         panel = new JPanel(new BorderLayout(8, 8));
 
-        // ── top: single-line fields ──────────────────────────────────────────
         JPanel top = new JPanel(new GridLayout(4, 2, 6, 6));
 
         top.add(new JLabel("INI file path:"));
@@ -63,7 +62,6 @@ public class OmnetIniRunSettingsEditor extends SettingsEditor<OmnetIniRunConfigu
         showGui.setSelected(true);
         top.add(showGui);
 
-        // ── center: multi-line fields ────────────────────────────────────────
         JPanel center = new JPanel(new GridLayout(3, 1, 0, 8));
 
         nedPaths = new JTextArea(3, 60);

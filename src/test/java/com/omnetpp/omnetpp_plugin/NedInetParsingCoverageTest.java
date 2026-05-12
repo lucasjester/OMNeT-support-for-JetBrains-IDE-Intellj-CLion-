@@ -48,9 +48,7 @@ import java.util.stream.Stream;
  * </ul>
  *
  * <p>The test itself does <strong>not</strong> fail via assertion — its purpose
- * is to measure grammar coverage, not to enforce 100% compatibility.  If you
- * want to enforce a minimum coverage threshold (e.g. 90%), uncomment the
- * assertion at the end of {@link #testInetNedParsingCoverage()}.</p>
+ * is to measure grammar coverage, not to enforce 100% compatibility.</p>
  */
 public class NedInetParsingCoverageTest extends ParsingTestCase {
 
@@ -60,8 +58,6 @@ public class NedInetParsingCoverageTest extends ParsingTestCase {
     public NedInetParsingCoverageTest() {
         super("", "ned", new NedParserDefinition());
     }
-
-    // ── ParsingTestCase boilerplate ────────────────────────────────────────
 
     @Override
     protected String getTestDataPath() {
@@ -73,13 +69,10 @@ public class NedInetParsingCoverageTest extends ParsingTestCase {
         return false;
     }
 
-    // ── Helper types ───────────────────────────────────────────────────────
-
-    /** Holds the result of parsing a single NED file. */
     private static class FileParseResult {
         final Path   filePath;
         final int    errorCount;
-        final String firstErrorMessage;   // null when errorCount == 0
+        final String firstErrorMessage;
 
         FileParseResult(Path filePath, int errorCount, String firstErrorMessage) {
             this.filePath          = filePath;
@@ -92,12 +85,6 @@ public class NedInetParsingCoverageTest extends ParsingTestCase {
         }
     }
 
-    // ── The actual test ────────────────────────────────────────────────────
-
-    /**
-     * Iterates over every {@code .ned} file under the configured INET root,
-     * parses it, and collects coverage statistics.
-     */
     public void testInetNedParsingCoverage() throws IOException {
         String inetPath = System.getProperty(INET_PATH_PROPERTY);
 
@@ -106,7 +93,7 @@ public class NedInetParsingCoverageTest extends ParsingTestCase {
             System.out.println(" SKIPPED: NedInetParsingCoverageTest");
             System.out.println(" Set -Dinet.ned.path=/path/to/inet/src to run this test");
             System.out.println("=======================================================");
-            return;   // graceful skip — not a failure
+            return;
         }
 
         Path inetRoot = Path.of(inetPath);
@@ -163,24 +150,8 @@ public class NedInetParsingCoverageTest extends ParsingTestCase {
         }
 
         System.out.println();
-
-        // ── Optional: enforce a minimum coverage threshold ─────────────
-        // Uncomment and adjust the threshold as your grammar improves.
-        //
-        // double minCoverage = 90.0;
-        // assertTrue(
-        //     String.format("Grammar coverage %.1f%% is below threshold %.1f%%",
-        //                   pctOk, minCoverage),
-        //     pctOk >= minCoverage
-        // );
     }
 
-    // ── Per-file parsing logic ─────────────────────────────────────────────
-
-    /**
-     * Reads a single {@code .ned} file, creates a PSI tree via the plugin's
-     * parser, and counts the number of {@link PsiErrorElement} nodes.
-     */
     private FileParseResult parseAndCheck(Path nedFile, Path inetRoot) {
         String content;
         try {
@@ -191,7 +162,6 @@ public class NedInetParsingCoverageTest extends ParsingTestCase {
         }
 
         try {
-            // createPsiFile is provided by ParsingTestCase
             PsiFile psiFile = createPsiFile(nedFile.getFileName().toString(), content);
 
             Collection<PsiErrorElement> errors =
@@ -207,7 +177,6 @@ public class NedInetParsingCoverageTest extends ParsingTestCase {
             return new FileParseResult(nedFile, errorCount, firstMsg);
 
         } catch (Exception e) {
-            // Parser threw an unexpected exception — count as failure
             return new FileParseResult(nedFile, 1,
                     "Exception during parsing: " + e.getClass().getSimpleName()
                             + " — " + e.getMessage());

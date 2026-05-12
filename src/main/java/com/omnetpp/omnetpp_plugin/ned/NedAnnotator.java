@@ -34,22 +34,6 @@ import java.util.Set;
  *       of valid names is collected by walking the current definition
  *       and every parent in its {@code extends} chain via PSI traversal.</li>
  * </ol>
- *
- * <p><b>Implementation note.</b> An earlier version of this annotator
- * used regex-based text scanning as a fallback for parents whose PSI
- * tree was incomplete (e.g. complex INET modules not fully covered by
- * the grammar). With the grammar now covering the tested INET and
- * OMNeT++ corpora, the fallback has been removed in favor of pure PSI
- * traversal with {@link NedDeclarationSearch} handling cross-file
- * resolution. If a parent's PSI tree is incomplete, this annotator
- * will under-report valid submodule names for that parent rather than
- * silently trusting a regex pass over raw bytes.</p>
- *
- * <p>Register in {@code plugin.xml}:</p>
- * <pre>{@code
- *   <annotator language="NED"
- *              implementationClass="com.omnetpp.omnetpp_plugin.ned.NedAnnotator"/>
- * }</pre>
  */
 public class NedAnnotator implements Annotator {
 
@@ -59,28 +43,22 @@ public class NedAnnotator implements Annotator {
     @Override
     public void annotate(@NotNull PsiElement element, @NotNull AnnotationHolder holder) {
 
-        // ── 1. Unresolved type references ────────────────────────────────────
-        // Dispatch is delegated to the dottedname itself via getReferenceKind().
-        // The annotator does not inspect parent types — that logic lives on
-        // NedDottednameMixin and is shared with NedReferenceContributor.
+        // Unresolved type references. Dispatch is delegated to the dottedname
+        // itself via getReferenceKind(); shared with NedReferenceContributor.
         if (element instanceof NedDottedname dottedname) {
             switch (dottedname.getReferenceKind()) {
                 case CHANNEL -> checkChannelType(dottedname, holder);
                 case MODULE  -> checkModuleType(dottedname, holder);
-                case NONE    -> { /* not a type reference, no check needed */ }
+                case NONE    -> {}
             }
             return;
         }
 
-        // ── 2. Unknown submodule names in connections ────────────────────────
+        // Unknown submodule names in connections.
         if (element instanceof NedLeftmod || element instanceof NedRightmod) {
             checkSubmoduleInstanceName(element, holder);
         }
     }
-
-    // ═════════════════════════════════════════════════════════════════════════
-    // Type reference checks
-    // ═════════════════════════════════════════════════════════════════════════
 
     private void checkModuleType(@NotNull NedDottedname dottedname,
                                  @NotNull AnnotationHolder holder) {
@@ -117,10 +95,6 @@ public class NedAnnotator implements Annotator {
                     .create();
         }
     }
-
-    // ═════════════════════════════════════════════════════════════════════════
-    // Submodule instance name check in connections
-    // ═════════════════════════════════════════════════════════════════════════
 
     private void checkSubmoduleInstanceName(@NotNull PsiElement modElement,
                                             @NotNull AnnotationHolder holder) {
@@ -162,11 +136,8 @@ public class NedAnnotator implements Annotator {
                                                         @NotNull Project project,
                                                         @NotNull PsiFile currentFile) {
         Set<String> names = new HashSet<>();
-
-        // ── Step 1: Local submodules in the current definition ─────────────
         collectLocalSubmoduleNames(definition, names);
 
-        // ── Step 2: Walk the extends chain ────────────────────────────────
         String extendsName = getExtendsTypeName(definition);
         int depth = 0;
 
@@ -191,14 +162,6 @@ public class NedAnnotator implements Annotator {
         return names;
     }
 
-    // ═════════════════════════════════════════════════════════════════════════
-    // PSI helpers
-    // ═════════════════════════════════════════════════════════════════════════
-
-    /**
-     * Finds the enclosing module/network definition for an element
-     * in the current file (used for connections context).
-     */
     @Nullable
     private static PsiElement findEnclosingDefinition(@NotNull PsiElement element) {
         PsiElement candidate = element.getParent();

@@ -1,8 +1,6 @@
 {
   lexerClass="com.omnetpp.omnetpp_plugin.NedLexer"
   parserClass="com.omnetpp.omnetpp_plugin.ned.parser.NedParser"
-  //extends="com.intellij.extapi.psi.ASTWrapperPsiElement"
-  extends="com.omnetpp.omnetpp_plugin.ned.psi.impl.NedPsiElementImpl"
   psiClassPrefix="Ned"
   psiImplClassSuffix="Impl"
   psiPackage="com.omnetpp.omnetpp_plugin.ned.psi"
@@ -47,10 +45,6 @@ dottedname ::= NAME (DOT NAME)* {
   methods=[getReferenceKind]
 }
 
-//dottedname ::= dottedname DOT NAME
-             //| NAME
-
-
 import ::= KW_IMPORT importspec SEMI
 
 importspec ::= importname (DOT importname)*
@@ -60,7 +54,6 @@ importname ::= (NAME | "*" | "**")+
 propertydecl ::= propertydecl_header opt_inline_properties SEMI
                | propertydecl_header LPAREN opt_propertydecl_keys RPAREN opt_inline_properties SEMI
 
-//propertydecl_header ::= (PROPERTY AT NAME | PROPERTY AT NAME LBRACK RBRACK)
 propertydecl_header ::=  (PROPERTY AT NAME (LBRACK RBRACK)?)
 
 opt_propertydecl_keys ::= propertydecl_keys?
@@ -110,7 +103,6 @@ private property_value_atom ::= property_literal
 private property_value_inner ::= (property_value_atom | COMMA | SEMI)*
 
 
-//property_literal ::= (CHAR | STRINGCONSTANT)+
 property_literal ::= (CHAR | STRINGCONSTANT | NAME | COLONCOLON
                      | DOUBLE | INT | STRING | BOOL | OBJECTDEF | XML
                      | XMLDOC | TRUE | FALSE | NAN | INF
@@ -244,11 +236,6 @@ private pattern_tail ::= TYPENAME
 
 
 
-//pattern_elem ::= pattern_name
-               //| pattern_name LBRACK pattern_index RBRACK
-               //| pattern_name LBRACK "*" RBRACK
-               //| "**"
-
 pattern_elem ::= pattern_name ((LBRACK pattern_index RBRACK)|(LBRACK "*" RBRACK))?
                | "**"
 
@@ -316,9 +303,6 @@ submodule ::= submoduleheader SEMI
 submoduleheader ::= submodulename COLON dottedname opt_condition
                   | submodulename COLON likeexpr LIKE dottedname opt_condition
 
-//submodulename ::= NAME
-                //| NAME vector
-
 submodulename ::= NAME (LBRACK expression RBRACK)?
 
 likeexpr ::= LT GT
@@ -328,7 +312,6 @@ likeexpr ::= LT GT
 opt_condition ::= condition?
 
 
-//Connection block
 opt_connblock ::= connblock?
 
 
@@ -507,19 +490,11 @@ numliteral ::= quantity
              | realconstant_ext
              | INTCONSTANT
 
-//numliteral ::= INTCONSTANT
-             //| realconstant_ext
-             //| quantity
-
 otherliteral ::= UNDEFINED
                | NULLPTR
                | NULL
 
-//allows ex. 1s 34ms
-//quantity ::= (INTCONSTANT NAME | realconstant_ext NAME )+
-
-//doesnt allow 1s 34ms
-
+// Does not allow space-separated unit chains like "1s 34ms".
 quantity ::= (INTCONSTANT | realconstant_ext) NAME+
 
 

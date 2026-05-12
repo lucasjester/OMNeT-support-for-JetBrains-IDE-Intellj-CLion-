@@ -27,45 +27,24 @@ public class NedDocumentationTest extends BasePlatformTestCase {
         return "src/test/testData";
     }
 
-    // ═════════════════════════════════════════════════════════════════════════
-    // Behavioural coverage — realistic paths and claimed provider behaviour
-    // ═════════════════════════════════════════════════════════════════════════
-
-    /**
-     * Test that Quick Documentation invoked on a reference (rather than on
-     * the declaration) resolves the reference across file boundaries and
-     * renders documentation for the declaration in the other file.
-     *
-     * <p>This is the realistic user path — hovering over a submodule type
-     * in a network file whose declaration lives elsewhere. The existing
-     * {@link #testDocumentation()} bypasses this path by calling the
-     * provider directly on the header.</p>
-     */
     public void testCrossFileDocumentationOnReference() {
-        // Declaration in a separate file
         myFixture.addFileToProject("modules/MyTarget.ned",
                 "simple MyTarget {\n" +
                         "    gates:\n" +
                         "        output out;\n" +
                         "}\n");
 
-        // Referencing file with caret on the reference
         myFixture.configureByText(NedFileType.INSTANCE,
                 "network Net {\n" +
                         "    submodules:\n" +
                         "        s: My<caret>Target;\n" +
                         "}\n");
 
-        // Resolve the reference at the caret — this is the reference-resolution
-        // step Quick Documentation performs internally before delegating to
-        // the provider.
         PsiReference reference = myFixture.getReferenceAtCaretPositionWithAssertion();
         PsiElement resolvedDecl = reference.resolve();
         assertNotNull("Cross-file reference should resolve to the declaration",
                 resolvedDecl);
 
-        // Generate docs on the resolved declaration, passing the caret
-        // element as originalElement (the typical provider contract).
         PsiElement elementAtCaret = myFixture.getFile()
                 .findElementAt(myFixture.getCaretOffset());
         String doc = new NedDocumentationProvider()
@@ -143,15 +122,6 @@ public class NedDocumentationTest extends BasePlatformTestCase {
                 doc.contains("Base"));
     }
 
-    // ═════════════════════════════════════════════════════════════════════════
-    // Tier 2 — declaration-kind matrix
-    // Parallel to the declaration-kind coverage in NedCrossFileReferenceTest
-    // ═════════════════════════════════════════════════════════════════════════
-
-    /**
-     * Test that documentation is generated for a compound {@code module}
-     * declaration.
-     */
     public void testCompoundModuleDocumentation() {
         PsiFile file = myFixture.addFileToProject("modules/MyCompound.ned",
                 "module MyCom<caret>pound {\n" +

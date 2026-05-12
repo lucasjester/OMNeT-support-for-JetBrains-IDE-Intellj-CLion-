@@ -15,26 +15,16 @@ public class OmnetIniRunConfiguration extends RunConfigurationBase {
 
     public String  iniPath    = "";
     public String  configName = "";
-    public String  simLibPath = "";   // override binary/library for this config only
+    public String  simLibPath = "";
     public String  extraArgs = "";
 
-
-    /**
-     * Semicolon-separated extra NED paths for this run config.
-     * These are ADDED on top of the global paths from OmnetRunSettings.
-     */
+    /** Semicolon-separated extra NED paths, merged with global paths from OmnetRunSettings. */
     public String  nedPaths   = "";
 
-    /**
-     * Semicolon-separated -l libraries for this run config.
-     * These are ADDED on top of the global libraries from OmnetRunSettings.
-     */
+    /** Semicolon-separated -l libraries, merged with global libraries from OmnetRunSettings. */
     public String  libraries  = "";
 
-    /**
-     * true  → Qtenv  (GUI window pops up)
-     * false → Cmdenv (headless, only produces result files)
-     */
+    /** true → Qtenv (GUI), false → Cmdenv (headless). */
     public boolean showGui    = true;
 
     protected OmnetIniRunConfiguration(@NotNull Project project,
@@ -43,7 +33,6 @@ public class OmnetIniRunConfiguration extends RunConfigurationBase {
         super(project, factory, name);
     }
 
-    // ── setters ──────────────────────────────────────────────────────────────
     public void setIniPath(@NotNull String path)    { this.iniPath    = path; }
     public void setConfigName(@NotNull String name) { this.configName = name; }
     public void setSimLibPath(@NotNull String path) { this.simLibPath = path; }
@@ -52,7 +41,6 @@ public class OmnetIniRunConfiguration extends RunConfigurationBase {
     public void setShowGui(boolean show)             { this.showGui    = show; }
     public void setExtraArgs(@NotNull String args) { this.extraArgs = args; }
 
-    // ── getters ──────────────────────────────────────────────────────────────
     public @NotNull String getIniPath()    { return iniPath    == null ? "" : iniPath; }
     public @NotNull String getConfigName() { return configName == null ? "" : configName; }
     public @NotNull String getSimLibPath() { return simLibPath == null ? "" : simLibPath; }
@@ -62,7 +50,6 @@ public class OmnetIniRunConfiguration extends RunConfigurationBase {
     public @NotNull String getExtraArgs() { return extraArgs == null ? "" : extraArgs; }
 
 
-    // ── IntelliJ API ──────────────────────────────────────────────────────────
     @Override
     public @NotNull SettingsEditor<? extends OmnetIniRunConfiguration> getConfigurationEditor() {
         return new OmnetIniRunSettingsEditor();

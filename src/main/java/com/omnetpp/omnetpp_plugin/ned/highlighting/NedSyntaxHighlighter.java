@@ -17,7 +17,6 @@ import static com.intellij.openapi.editor.colors.TextAttributesKey.createTextAtt
 
 public class NedSyntaxHighlighter extends SyntaxHighlighterBase {
 
-    // ===== Color keys (shown in Settings | Editor | Color Scheme | NED) =====
     public static final TextAttributesKey KEYWORD =
             createTextAttributesKey("NED_KEYWORD", DefaultLanguageHighlighterColors.KEYWORD);
 
@@ -39,26 +38,8 @@ public class NedSyntaxHighlighter extends SyntaxHighlighterBase {
     public static final TextAttributesKey OPERATOR =
             createTextAttributesKey("NED_OPERATOR", DefaultLanguageHighlighterColors.OPERATION_SIGN);
 
-    public static final TextAttributesKey BRACES =
-            createTextAttributesKey("NED_BRACES", DefaultLanguageHighlighterColors.BRACES);
-
-    public static final TextAttributesKey PARENTHESES =
-            createTextAttributesKey("NED_PARENTHESES", DefaultLanguageHighlighterColors.PARENTHESES);
-
-    public static final TextAttributesKey BRACKETS =
-            createTextAttributesKey("NED_BRACKETS", DefaultLanguageHighlighterColors.BRACKETS);
-
-    public static final TextAttributesKey COMMA =
-            createTextAttributesKey("NED_COMMA", DefaultLanguageHighlighterColors.COMMA);
-
-    public static final TextAttributesKey DOT =
-            createTextAttributesKey("NED_DOT", DefaultLanguageHighlighterColors.DOT);
-
-    public static final TextAttributesKey SEMICOLON =
-            createTextAttributesKey("NED_SEMICOLON", DefaultLanguageHighlighterColors.SEMICOLON);
-
-    public static final TextAttributesKey COLON =
-            createTextAttributesKey("NED_COLON", DefaultLanguageHighlighterColors.OPERATION_SIGN);
+    public static final TextAttributesKey PUNCTUATION =
+            createTextAttributesKey("NED_PUNCTUATION", DefaultLanguageHighlighterColors.SEMICOLON);
 
     public static final TextAttributesKey BAD_CHARACTER =
             createTextAttributesKey("NED_BAD_CHARACTER", DefaultLanguageHighlighterColors.INVALID_STRING_ESCAPE);
@@ -66,19 +47,15 @@ public class NedSyntaxHighlighter extends SyntaxHighlighterBase {
     private static final Map<IElementType, TextAttributesKey> KEYS = new HashMap<>();
 
     static {
-        // ===== Comments (these must exist in NedTypes after you add tokens in .bnf + regenerate) =====
         KEYS.put(NedTypes.LINE_COMMENT, LINE_COMMENT);
         KEYS.put(NedTypes.BLOCK_COMMENT, BLOCK_COMMENT);
 
-        // ===== Literals =====
         KEYS.put(NedTypes.STRINGCONSTANT, STRING);
         KEYS.put(NedTypes.INTCONSTANT, NUMBER);
         KEYS.put(NedTypes.REALCONSTANT, NUMBER);
 
-        // ===== Identifiers / names =====
         KEYS.put(NedTypes.NAME, IDENTIFIER);
 
-        // ===== Keywords (language constructs) =====
         IElementType[] keywords = new IElementType[]{
                 NedTypes.PACKAGE,
                 NedTypes.KW_IMPORT,
@@ -119,7 +96,6 @@ public class NedSyntaxHighlighter extends SyntaxHighlighterBase {
             KEYS.put(k, KEYWORD);
         }
 
-        // ===== Builtin literal-ish keywords =====
         IElementType[] literalKeywords = new IElementType[]{
                 NedTypes.TRUE,
                 NedTypes.FALSE,
@@ -133,7 +109,6 @@ public class NedSyntaxHighlighter extends SyntaxHighlighterBase {
             KEYS.put(lk, KEYWORD);
         }
 
-        // ===== Primitive type keywords (highlighted as KEYWORD, matching IDE convention) =====
         IElementType[] primitiveTypes = new IElementType[]{
                 NedTypes.BOOL,
                 NedTypes.INT,
@@ -146,7 +121,6 @@ public class NedSyntaxHighlighter extends SyntaxHighlighterBase {
             KEYS.put(t, KEYWORD);
         }
 
-        // ===== Operators =====
         IElementType[] ops = new IElementType[]{
                 NedTypes.ASSIGN,
                 NedTypes.EQ,
@@ -182,22 +156,22 @@ public class NedSyntaxHighlighter extends SyntaxHighlighterBase {
             KEYS.put(o, OPERATOR);
         }
 
-        // ===== Punctuation =====
-        KEYS.put(NedTypes.LBRACE, BRACES);
-        KEYS.put(NedTypes.RBRACE, BRACES);
+        IElementType[] punctuation = new IElementType[]{
+                NedTypes.LBRACE,
+                NedTypes.RBRACE,
+                NedTypes.LPAREN,
+                NedTypes.RPAREN,
+                NedTypes.LBRACK,
+                NedTypes.RBRACK,
+                NedTypes.COMMA,
+                NedTypes.DOT,
+                NedTypes.SEMI,
+                NedTypes.COLON
+        };
+        for (IElementType p : punctuation) {
+            KEYS.put(p, PUNCTUATION);
+        }
 
-        KEYS.put(NedTypes.LPAREN, PARENTHESES);
-        KEYS.put(NedTypes.RPAREN, PARENTHESES);
-
-        KEYS.put(NedTypes.LBRACK, BRACKETS);
-        KEYS.put(NedTypes.RBRACK, BRACKETS);
-
-        KEYS.put(NedTypes.COMMA, COMMA);
-        KEYS.put(NedTypes.DOT, DOT);
-        KEYS.put(NedTypes.SEMI, SEMICOLON);
-        KEYS.put(NedTypes.COLON, COLON);
-
-        // ===== Fallback for invalid chars from lexer =====
         KEYS.put(TokenType.BAD_CHARACTER, BAD_CHARACTER);
     }
 

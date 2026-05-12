@@ -44,7 +44,6 @@ public class IniParserDefinition implements ParserDefinition {
 
     @Override
     public @NotNull TokenSet getStringLiteralElements() {
-        // optional – du hast STRING als Token, aber fürs PSI reicht hier empty
         return TokenSet.EMPTY;
     }
 

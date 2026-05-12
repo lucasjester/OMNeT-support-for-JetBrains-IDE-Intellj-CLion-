@@ -16,7 +16,6 @@ public class NedElementFactory {
 
     @Nullable
     public static PsiElement createNameIdentifier(@NotNull Project project, @NotNull String name) {
-        // Parse a minimal valid snippet that definitely contains a NAME in a module header
         String text = "simple " + name + " {}";
         NedFile file = (NedFile) PsiFileFactory.getInstance(project)
                 .createFileFromText("dummy.ned", NedFileType.INSTANCE, text);

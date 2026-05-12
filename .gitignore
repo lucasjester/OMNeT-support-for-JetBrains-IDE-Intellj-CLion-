@@ -10,6 +10,12 @@ build/
 
 
 ############################
+# Claude Code workspace (local)
+############################
+.claude/
+
+
+############################
 # IntelliJ IDEA (local IDE config)
 ############################
 .idea/
@@ -35,14 +41,6 @@ out/
 /sandbox/
 build/idea-sandbox/
 .sandbox/
-
-
-############################
-# Grammar-Kit / JFlex generated sources
-############################
-gen/
-src/main/gen/
-src/gen/
 
 
 ############################

@@ -22,18 +22,13 @@ public class NedColorSettingsPage implements ColorSettingsPage {
             new AttributesDescriptor("Line comment", NedSyntaxHighlighter.LINE_COMMENT),
             new AttributesDescriptor("Block comment", NedSyntaxHighlighter.BLOCK_COMMENT),
             new AttributesDescriptor("Operator", NedSyntaxHighlighter.OPERATOR),
-            new AttributesDescriptor("Braces", NedSyntaxHighlighter.BRACES),
-            new AttributesDescriptor("Parentheses", NedSyntaxHighlighter.PARENTHESES),
-            new AttributesDescriptor("Brackets", NedSyntaxHighlighter.BRACKETS),
-            new AttributesDescriptor("Comma", NedSyntaxHighlighter.COMMA),
-            new AttributesDescriptor("Dot", NedSyntaxHighlighter.DOT),
-            new AttributesDescriptor("Semicolon", NedSyntaxHighlighter.SEMICOLON),
+            new AttributesDescriptor("Punctuation", NedSyntaxHighlighter.PUNCTUATION),
             new AttributesDescriptor("Bad character", NedSyntaxHighlighter.BAD_CHARACTER),
     };
 
     @Override
     public @Nullable Icon getIcon() {
-        return OmnetIcons.NED_ICON; // you already have this :contentReference[oaicite:8]{index=8}
+        return OmnetIcons.NED_ICON;
     }
 
     @Override

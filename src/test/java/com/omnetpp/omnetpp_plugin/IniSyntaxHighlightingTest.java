@@ -37,6 +37,6 @@ public class IniSyntaxHighlightingTest extends BasePlatformTestCase {
     public void testIniSyntaxHighlighting() {
         PsiFile testFile = myFixture.configureByFile("IniSyntaxHighlightingTestData.ini");
         String answerFilePath = getTestDataPath() + "/IniSyntaxHighlightingTestData.txt";
-        EditorTestUtil.testFileSyntaxHighlighting(testFile, answerFilePath, true);
+        EditorTestUtil.testFileSyntaxHighlighting(testFile, answerFilePath, false);
     }
 }

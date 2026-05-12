@@ -57,12 +57,6 @@ public class IniLexerTest extends BasePlatformTestCase {
         return tokens;
     }
 
-    // ═══════════════════════════════════════════════════════════════════════
-    //  Original tests (unchanged)
-    // ═══════════════════════════════════════════════════════════════════════
-
-    // ── Section headers ───────────────────────────────────────────────────
-
     public void testSectionHeader() {
         List<IElementType> tokens = tokenize("[General]");
         assertEquals(1, tokens.size());
@@ -75,8 +69,6 @@ public class IniLexerTest extends BasePlatformTestCase {
         assertEquals(IniTypes.SECTION_HEADER, tokens.get(0));
     }
 
-    // ── Comments ──────────────────────────────────────────────────────────
-
     public void testHashComment() {
         List<IElementType> tokens = tokenize("# this is a comment");
         assertEquals(1, tokens.size());
@@ -88,8 +80,6 @@ public class IniLexerTest extends BasePlatformTestCase {
         assertEquals(1, tokens.size());
         assertEquals(IniTypes.COMMENT, tokens.get(0));
     }
-
-    // ── Simple key-value assignments ──────────────────────────────────────
 
     public void testSimpleKeyValue() {
         List<IElementType> tokens = tokenize("network = TestNetwork");
@@ -123,8 +113,6 @@ public class IniLexerTest extends BasePlatformTestCase {
         assertEquals(IniTypes.BOOLEAN, tokens.get(2));
     }
 
-    // ── Wildcard keys ─────────────────────────────────────────────────────
-
     public void testWildcardKeyWithSubscript() {
         List<IElementType> tokens = tokenize("*.host.app[0].typename = \"UdpBasicApp\"");
         assertEquals(3, tokens.size());
@@ -139,8 +127,6 @@ public class IniLexerTest extends BasePlatformTestCase {
         assertEquals(IniTypes.KEY, tokens.get(0));
     }
 
-    // ── Function calls ────────────────────────────────────────────────────
-
     public void testFunctionCallValue() {
         List<IElementType> tokens = tokenize("*.app[0].sendInterval = exponential(1s)");
         assertEquals(3, tokens.size());
@@ -148,8 +134,6 @@ public class IniLexerTest extends BasePlatformTestCase {
         assertEquals(IniTypes.EQ, tokens.get(1));
         assertEquals(IniTypes.FUNC_CALL, tokens.get(2));
     }
-
-    // ── Array values ──────────────────────────────────────────────────────
 
     public void testArrayValue() {
         List<IElementType> tokens = tokenize("*.gate[0].durations = [20us, 980us]");
@@ -162,8 +146,6 @@ public class IniLexerTest extends BasePlatformTestCase {
         assertEquals(IniTypes.RBRACK, tokens.get(6));
     }
 
-    // ── Negative numbers ──────────────────────────────────────────────────
-
     public void testNegativeNumber() {
         List<IElementType> tokens = tokenize("*.speed = -5.0");
         assertEquals(3, tokens.size());
@@ -172,15 +154,11 @@ public class IniLexerTest extends BasePlatformTestCase {
         assertEquals(IniTypes.NUMBER, tokens.get(2));
     }
 
-    // ── Inline comments ───────────────────────────────────────────────────
-
     public void testInlineComment() {
         List<IElementType> tokens = tokenize("network = TestNetwork # this is inline");
         assertTrue("Should contain a COMMENT token",
                 tokens.contains(IniTypes.COMMENT));
     }
-
-    // ── Multi-line file ───────────────────────────────────────────────────
 
     public void testMultiLineTokenization() {
         String input = "[General]\nnetwork = TestNetwork\nsim-time-limit = 100s";
@@ -195,33 +173,18 @@ public class IniLexerTest extends BasePlatformTestCase {
         assertEquals(IniTypes.NUMBER, tokens.get(6));
     }
 
-    // ── Decimal number with unit ──────────────────────────────────────────
-
     public void testDecimalNumberWithUnit() {
         List<IElementType> tokens = tokenize("*.rate = 41.68Mbps");
         assertEquals(3, tokens.size());
         assertEquals(IniTypes.NUMBER, tokens.get(2));
     }
 
-    // ═══════════════════════════════════════════════════════════════════════
-    //  New tests for added lexer features
-    // ═══════════════════════════════════════════════════════════════════════
-
-    // ── // comments ───────────────────────────────────────────────────────
-
-    /**
-     * Test that C++-style double-slash comments are recognized.
-     * OMNeT++ INI files support both # and // for line comments.
-     */
     public void testSlashSlashComment() {
         List<IElementType> tokens = tokenize("// this is a C++ style comment");
         assertEquals(1, tokens.size());
         assertEquals(IniTypes.COMMENT, tokens.get(0));
     }
 
-    /**
-     * Test that inline // comments after a value are recognized.
-     */
     public void testInlineSlashSlashComment() {
         List<IElementType> tokens = tokenize("network = TestNetwork // inline comment");
         assertTrue("Should contain a COMMENT token",
@@ -232,31 +195,18 @@ public class IniLexerTest extends BasePlatformTestCase {
         assertEquals(IniTypes.COMMENT, tokens.get(3));
     }
 
-    // ── Include directive ─────────────────────────────────────────────────
-
-    /**
-     * Test that the include directive is recognized as a single INCLUDE token.
-     */
     public void testIncludeDirective() {
         List<IElementType> tokens = tokenize("include ../shared.ini");
         assertEquals(1, tokens.size());
         assertEquals(IniTypes.INCLUDE, tokens.get(0));
     }
 
-    /**
-     * Test that include with a relative path is correctly tokenized.
-     */
     public void testIncludeWithPath() {
         List<IElementType> tokens = tokenize("include ../../configs/common.ini");
         assertEquals(1, tokens.size());
         assertEquals(IniTypes.INCLUDE, tokens.get(0));
     }
 
-    // ── Iteration variables ${...} ────────────────────────────────────────
-
-    /**
-     * Test that ${...} iteration variables are recognized as ITER_VAR tokens.
-     */
     public void testIterationVariable() {
         List<IElementType> tokens = tokenize("*.numHosts = ${N=1, 2, 5, 10}");
         assertEquals(IniTypes.KEY, tokens.get(0));
@@ -264,9 +214,6 @@ public class IniLexerTest extends BasePlatformTestCase {
         assertEquals(IniTypes.ITER_VAR, tokens.get(2));
     }
 
-    /**
-     * Test that iteration variables with range syntax are recognized.
-     */
     public void testIterationVariableRange() {
         List<IElementType> tokens = tokenize("*.count = ${1..10 step 2}");
         assertEquals(IniTypes.KEY, tokens.get(0));
@@ -274,28 +221,6 @@ public class IniLexerTest extends BasePlatformTestCase {
         assertEquals(IniTypes.ITER_VAR, tokens.get(2));
     }
 
-    /**
-     * Test that iteration variables can appear inside a value expression,
-     * e.g. mixed with a unit suffix.
-
-    public void testIterationVariableWithUnit() {
-        List<IElementType> tokens = tokenize("**.interval = exponential(${mean=0.2, 0.4}s)");
-        assertEquals(IniTypes.KEY, tokens.get(0));
-        assertEquals(IniTypes.EQ, tokens.get(1));
-        // exponential(${mean=0.2, 0.4}s) contains nested ${} inside parens;
-        // the FUNC_CALL regex may or may not capture this as one token
-        // depending on nesting depth — either way, ITER_VAR should appear
-        assertTrue("Should contain an ITER_VAR token",
-                tokens.contains(IniTypes.ITER_VAR));
-    }
-     */
-
-    // ── Bare $variable references ─────────────────────────────────────────
-
-    /**
-     * Test that bare $variable references (without braces) are recognized
-     * as ITER_VAR tokens.
-     */
     public void testBareVariableReference() {
         List<IElementType> tokens = tokenize("*.repeat = $repetition");
         assertEquals(IniTypes.KEY, tokens.get(0));
@@ -303,11 +228,6 @@ public class IniLexerTest extends BasePlatformTestCase {
         assertEquals(IniTypes.ITER_VAR, tokens.get(2));
     }
 
-    // ── Single-quoted strings ─────────────────────────────────────────────
-
-    /**
-     * Test that single-quoted strings are recognized as STRING tokens.
-     */
     public void testSingleQuotedString() {
         List<IElementType> tokens = tokenize("*.path = '/usr/local/etc'");
         assertEquals(3, tokens.size());
@@ -316,12 +236,6 @@ public class IniLexerTest extends BasePlatformTestCase {
         assertEquals(IniTypes.STRING, tokens.get(2));
     }
 
-    // ── Question mark in keys ─────────────────────────────────────────────
-
-    /**
-     * Test that keys containing ? (per-object config patterns) are
-     * recognized as a single KEY token.
-     */
     public void testQuestionMarkInKey() {
         List<IElementType> tokens = tokenize("**.hasGlobalArp? = true");
         assertEquals(3, tokens.size());
@@ -330,11 +244,6 @@ public class IniLexerTest extends BasePlatformTestCase {
         assertEquals(IniTypes.BOOLEAN, tokens.get(2));
     }
 
-    // ── Parenthesized expressions ─────────────────────────────────────────
-
-    /**
-     * Test that parentheses in value position are tokenized as LPAREN/RPAREN.
-     */
     public void testParenthesizedExpression() {
         List<IElementType> tokens = tokenize("*.bitrate = (100 * 1024) * 1bps");
         assertEquals(IniTypes.KEY, tokens.get(0));
@@ -348,12 +257,6 @@ public class IniLexerTest extends BasePlatformTestCase {
         assertEquals(IniTypes.NUMBER, tokens.get(8));      // 1bps
     }
 
-    // ── Comparison and logical operators ───────────────────────────────────
-
-    /**
-     * Test that comparison operators in value position are recognized
-     * as ARITH_OP tokens.
-     */
     public void testComparisonOperators() {
         List<IElementType> tokens = tokenize("constraint = $x < $y && $y <= 100");
         assertEquals(IniTypes.KEY, tokens.get(0));
@@ -367,9 +270,6 @@ public class IniLexerTest extends BasePlatformTestCase {
         assertEquals(IniTypes.NUMBER, tokens.get(8));      // 100
     }
 
-    /**
-     * Test that the ternary operator ? : is recognized.
-     */
     public void testTernaryOperator() {
         List<IElementType> tokens = tokenize("*.mode = $x > 5 ? \"fast\" : \"slow\"");
         assertEquals(IniTypes.KEY, tokens.get(0));
@@ -384,13 +284,6 @@ public class IniLexerTest extends BasePlatformTestCase {
                 arithCount >= 3);
     }
 
-    // ── Deeply nested expressions ─────────────────────────────────────────
-
-    /**
-     * Test that deeply nested expressions (more than 1 level of parens)
-     * cause the FUNC_CALL regex to fall through, tokenizing the function
-     * name as VALUE and the parens as LPAREN/RPAREN.
-     */
     public void testDeeplyNestedExpression() {
         List<IElementType> tokens = tokenize(
                 "*.filter = expr((has(Sync) && Sync.domain == 0))");
@@ -408,34 +301,18 @@ public class IniLexerTest extends BasePlatformTestCase {
         assertEquals(IniTypes.RPAREN, tokens.get(tokens.size() - 1));
     }
 
-    // ── Simple function call still works ───────────────────────────────────
-
-    /**
-     * Test that simple function calls (no nesting) still match FUNC_CALL.
-     */
     public void testSimpleFunctionCall() {
         List<IElementType> tokens = tokenize("*.delay = uniform(0.1s, 0.5s)");
         assertEquals(3, tokens.size());
         assertEquals(IniTypes.FUNC_CALL, tokens.get(2));
     }
 
-    /**
-     * Test that function calls with one level of nesting still match
-     * FUNC_CALL as a single token.
-     */
     public void testOneLevelNestedFunctionCall() {
         List<IElementType> tokens = tokenize("*.x = uniform(intuniform(0,5), 10)");
         assertEquals(3, tokens.size());
         assertEquals(IniTypes.FUNC_CALL, tokens.get(2));
     }
 
-    // ── Arithmetic expression after function call ─────────────────────────
-
-    /**
-     * Test that a function call followed by an arithmetic operator and
-     * another value are correctly tokenized as separate tokens (not consumed
-     * by a greedy FUNC_CALL regex).
-     */
     public void testFunctionCallPlusArithmetic() {
         List<IElementType> tokens = tokenize("*.jitter = uniform(0.1ms, 0.5ms) + normal(0ms, 0.01ms)");
         assertEquals(IniTypes.KEY, tokens.get(0));
@@ -445,12 +322,6 @@ public class IniLexerTest extends BasePlatformTestCase {
         assertEquals(IniTypes.FUNC_CALL, tokens.get(4));       // normal(0ms, 0.01ms)
     }
 
-    // ── Array with objects ────────────────────────────────────────────────
-
-    /**
-     * Test that arrays containing object literals are correctly tokenized
-     * with proper state transitions: AFTER_EQ → IN_ARRAY → IN_OBJECT → IN_ARRAY.
-     */
     public void testArrayWithObjects() {
         List<IElementType> tokens = tokenize(
                 "*.mapping = [{stream: \"be\", pcp: 0}, {stream: \"hp\", pcp: 4}]");
@@ -468,13 +339,6 @@ public class IniLexerTest extends BasePlatformTestCase {
         assertEquals(IniTypes.LBRACE, tokens.get(11));
     }
 
-    // ── Multi-line array with objects ──────────────────────────────────────
-
-    /**
-     * Test that multi-line arrays (spanning multiple lines without backslash
-     * continuation) are correctly tokenized.  The IN_ARRAY state must persist
-     * across newlines.
-     */
     public void testMultiLineArrayWithObjects() {
         String input = "*.mapping = [{stream: \"be\", pcp: 0},\n"
                 + "             {stream: \"hp\", pcp: 4}]";
@@ -496,23 +360,12 @@ public class IniLexerTest extends BasePlatformTestCase {
                 tokens.contains(TokenType.BAD_CHARACTER));
     }
 
-    // ── Scientific notation ───────────────────────────────────────────────
-
-    /**
-     * Test that numbers with scientific notation are recognized.
-     */
     public void testScientificNotation() {
         List<IElementType> tokens = tokenize("*.power = 1.5e-3W");
         assertEquals(3, tokens.size());
         assertEquals(IniTypes.NUMBER, tokens.get(2));
     }
 
-    // ── Line continuation ─────────────────────────────────────────────────
-
-    /**
-     * Test that backslash-newline line continuation keeps the lexer in
-     * AFTER_EQ state, so the next physical line is still parsed as a value.
-     */
     public void testLineContinuation() {
         String input = "*.value = \"first\" + \\\n\"second\"";
         List<IElementType> tokens = tokenize(input);
@@ -526,13 +379,6 @@ public class IniLexerTest extends BasePlatformTestCase {
                 IniTypes.STRING, tokens.get(4));
     }
 
-    // ── Space-separated units ─────────────────────────────────────────────
-
-    /**
-     * Test that space-separated units (e.g. "32 bytes") produce separate
-     * tokens: NUMBER and VALUE.  The grammar's permissive valueSeq rule
-     * handles combining them.
-     */
     public void testSpaceSeparatedUnit() {
         List<IElementType> tokens = tokenize("**.messageLength = 32 bytes");
         assertEquals(IniTypes.KEY, tokens.get(0));

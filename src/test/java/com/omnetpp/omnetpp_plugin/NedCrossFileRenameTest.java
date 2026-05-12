@@ -26,7 +26,7 @@ public class NedCrossFileRenameTest extends BasePlatformTestCase {
      */
     public void testCrossFileRenameMultipleReferences() {
         // 1. Two separate referencing files
-        myFixture.configureByText("Pipeline.ned",
+        myFixture.addFileToProject("Pipeline.ned",
                 "network Pipeline {\n" +
                         "    submodules:\n" +
                         "        src: Source;\n" +

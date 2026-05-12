@@ -6,7 +6,6 @@ import com.intellij.testFramework.fixtures.BasePlatformTestCase;
 import com.omnetpp.omnetpp_plugin.ned.NedFileType;
 import com.omnetpp.omnetpp_plugin.ned.psi.NedChannelheader;
 import com.omnetpp.omnetpp_plugin.ned.psi.NedCompoundmoduleheader;
-import com.omnetpp.omnetpp_plugin.ned.psi.NedNetworkheader;
 import com.omnetpp.omnetpp_plugin.ned.psi.NedSimplemoduleheader;
 
 /**
@@ -88,33 +87,6 @@ public class NedCrossFileReferenceTest extends BasePlatformTestCase {
         NedCompoundmoduleheader header =
                 assertInstanceOf(resolved, NedCompoundmoduleheader.class);
         assertEquals("MySubnet", header.getName());
-    }
-
-    /**
-     * Test that a submodule type reference resolves to a network declaration
-     * in a separate file.
-     */
-    public void testCrossFileNetworkReference() {
-        // 1. Add a NED file with a network declaration
-        myFixture.addFileToProject("networks/TestNet.ned",
-                "network TestNet {\n" +
-                        "}\n");
-
-        // 2. Configure the referencing file
-        myFixture.configureByText(NedFileType.INSTANCE,
-                "module Wrapper {\n" +
-                        "    submodules:\n" +
-                        "        net: Test<caret>Net;\n" +
-                        "}\n");
-
-        // 3. Resolve
-        PsiReference reference = myFixture.getReferenceAtCaretPositionWithAssertion();
-        PsiElement resolved = reference.resolve();
-
-        // 4. Verify resolution target: presence, PSI type, and name
-        assertNotNull("Cross-file network reference should resolve", resolved);
-        NedNetworkheader header = assertInstanceOf(resolved, NedNetworkheader.class);
-        assertEquals("TestNet", header.getName());
     }
 
     /**

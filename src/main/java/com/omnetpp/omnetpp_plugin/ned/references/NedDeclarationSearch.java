@@ -52,10 +52,6 @@ public final class NedDeclarationSearch {
     private static volatile String      builtinNedContent;
     private static volatile VirtualFile builtinVirtualFile;
 
-    // ═════════════════════════════════════════════════════════════════════════
-    // Public API
-    // ═════════════════════════════════════════════════════════════════════════
-
     @Nullable
     public static PsiElement findModuleType(@NotNull Project project,
                                             @NotNull PsiFile currentFile,
@@ -69,20 +65,6 @@ public final class NedDeclarationSearch {
                                              @NotNull String targetName) {
         return findType(project, currentFile, targetName, /*channelOnly=*/ true);
     }
-
-    @NotNull
-    public static List<String> allModuleTypeNames(@NotNull Project project) {
-        return collectAllNames(project, /*channelOnly=*/ false);
-    }
-
-    @NotNull
-    public static List<String> allChannelTypeNames(@NotNull Project project) {
-        return collectAllNames(project, /*channelOnly=*/ true);
-    }
-
-    // ═════════════════════════════════════════════════════════════════════════
-    // Core search
-    // ═════════════════════════════════════════════════════════════════════════
 
     @Nullable
     private static PsiElement findType(@NotNull Project project,
@@ -149,14 +131,10 @@ public final class NedDeclarationSearch {
         return (matches == null || matches.isEmpty()) ? null : matches.get(0);
     }
 
-    // ═════════════════════════════════════════════════════════════════════════
-    // Per-file cached header indexes
-    //
     // CachedValuesManager stores the map on the NedFile itself, with the
     // file as the only dependency. When the file's PSI tree changes (via
     // any edit) the cache is invalidated; other files' caches stay valid.
-    // First access after a change rebuilds *just that file's* index.
-    // ═════════════════════════════════════════════════════════════════════════
+    // First access after a change rebuilds just that file's index.
 
     @NotNull
     private static Map<String, List<PsiElement>> getCachedModuleHeaders(@NotNull NedFile file) {
@@ -209,53 +187,8 @@ public final class NedDeclarationSearch {
         map.computeIfAbsent(name, k -> new ArrayList<>()).add(header);
     }
 
-    // ═════════════════════════════════════════════════════════════════════════
-    // Completion support
-    // ═════════════════════════════════════════════════════════════════════════
-
-    @NotNull
-    private static List<String> collectAllNames(@NotNull Project project, boolean channelOnly) {
-        Set<String> names = new LinkedHashSet<>();
-
-        for (VirtualFile vf : collectAllNedFiles(project)) {
-            try {
-                ReadAction.run(() -> {
-                    PsiFile pf = PsiManager.getInstance(project).findFile(vf);
-                    if (pf instanceof NedFile nf) {
-                        Map<String, List<PsiElement>> map = channelOnly
-                                ? getCachedChannelHeaders(nf)
-                                : getCachedModuleHeaders(nf);
-                        names.addAll(map.keySet());
-                    }
-                });
-            } catch (Exception ignored) {}
-        }
-
-        VirtualFile builtin = getBuiltinStubFile();
-        if (builtin != null) {
-            try {
-                ReadAction.run(() -> {
-                    PsiFile pf = PsiManager.getInstance(project).findFile(builtin);
-                    if (pf instanceof NedFile nf) {
-                        Map<String, List<PsiElement>> map = channelOnly
-                                ? getCachedChannelHeaders(nf)
-                                : getCachedModuleHeaders(nf);
-                        names.addAll(map.keySet());
-                    }
-                });
-            } catch (Exception ignored) {}
-        }
-
-        return new ArrayList<>(names);
-    }
-
-    // ═════════════════════════════════════════════════════════════════════════
-    // File collection
-    //
-    // Exposed to other lookup infrastructure (e.g. the INI
-    // parameter/gate handler) so the file-enumeration logic is not
-    // duplicated across the plugin.
-    // ═════════════════════════════════════════════════════════════════════════
+    // Exposed to other lookup infrastructure (e.g. the INI parameter/gate
+    // handler) so the file-enumeration logic is not duplicated.
 
     @NotNull
     public static Collection<VirtualFile> collectAllNedFiles(@NotNull Project project) {
@@ -290,10 +223,6 @@ public final class NedDeclarationSearch {
             }
         }
     }
-
-    // ═════════════════════════════════════════════════════════════════════════
-    // Helpers
-    // ═════════════════════════════════════════════════════════════════════════
 
     private static boolean fileMatchesPackage(@NotNull PsiFile file, @NotNull String packagePrefix) {
         NedPackagedeclaration pkg = PsiTreeUtil.findChildOfType(file, NedPackagedeclaration.class);
