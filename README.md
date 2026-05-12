@@ -13,7 +13,7 @@ The Gradle wrapper (`./gradlew`) downloads everything else.
 
 1. Clone and build the plugin ZIP:
    ```bash
-   git clone https://github.com/lucasjester/omnetpp_plugin.git
+   git clone https://gitlab-vs.informatik.uni-stuttgart.de/ba-jester-omnet-jetbrains-plugin/omnet-plugin.git
    cd omnetpp_plugin
    ./gradlew buildPlugin
    ```
