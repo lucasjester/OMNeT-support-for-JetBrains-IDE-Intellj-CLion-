@@ -112,30 +112,35 @@ public class NedDocumentationProvider extends AbstractDocumentationProvider {
         PsiElement definition = element.getParent();
         if (definition == null) definition = element;
 
-        // Walk up to the topmost non-file parent so we are at the same
-        // level where preceding comments attach in the PSI tree. The NED
-        // grammar nests a simple-module declaration as
-        // NedFile > NedDefinitions > NedDefinition > NedSimplemoduledefinition > NedSimplemoduleheader,
-        // so a single level up is not enough.
+        // Stop at the direct child of NedDefinitions (or the file). Preceding
+        // // comments sit as siblings inside NedDefinitions, so walking all
+        // the way up to NedDefinitions overshoots and getPrevSibling() at
+        // file level returns null when there's a package/import above.
         while (definition.getParent() != null
+                && !(definition.getParent() instanceof NedDefinitions)
                 && !(definition.getParent() instanceof PsiFile)) {
             definition = definition.getParent();
         }
 
+        java.util.Deque<PsiComment> comments = new java.util.ArrayDeque<>();
         PsiElement prev = definition.getPrevSibling();
-        while (prev instanceof PsiWhiteSpace) {
+        while (prev instanceof PsiWhiteSpace || prev instanceof PsiComment) {
+            if (prev instanceof PsiComment) comments.push((PsiComment) prev);
             prev = prev.getPrevSibling();
         }
+        if (comments.isEmpty()) return null;
 
-        if (prev instanceof PsiComment) {
-            String text = prev.getText();
+        StringBuilder out = new StringBuilder();
+        for (PsiComment c : comments) {
+            String text = c.getText();
             text = text.replaceAll("^//\\s?", "");
             text = text.replaceAll("^/\\*+\\s?", "");
             text = text.replaceAll("\\s?\\*+/$", "");
             text = text.replaceAll("(?m)^\\s?\\*\\s?", "");
-            return text.trim();
+            if (out.length() > 0) out.append('\n');
+            out.append(text);
         }
-        return null;
+        return out.toString().trim();
     }
 
     private static void addSection(String key, String value, StringBuilder sb) {

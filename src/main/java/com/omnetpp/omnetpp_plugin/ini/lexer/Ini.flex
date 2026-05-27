@@ -32,7 +32,7 @@ import static com.omnetpp.omnetpp_plugin.ini.psi.IniTypes.*;
 %}
 
 LINE_END        = \r\n | \r | \n
-WHITE_SPACE     = [ \t]+
+WHITE_SPACE     =[ \t]+
 LINE_CONT       = \\ [ \t]* (\r\n | \r | \n)
 
 COMMENT         = ([;#] | "//") [^\r\n]*
